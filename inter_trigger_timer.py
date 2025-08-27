@@ -12,6 +12,7 @@ from prophet.serialize import model_to_json, model_from_json
 from numpy.random import triangular as triang
 import json
 from scipy.stats import truncnorm
+from scipy.stats import expon
 
 class InterTriggerTimer(object):
 
@@ -42,6 +43,16 @@ class InterTriggerTimer(object):
                 sigma = self.params["scale"]
                 a, b = (lower - mu) / sigma, (upper - mu) / sigma
                 arrival = truncnorm.rvs(a, b, loc=mu, scale=sigma, size=1)[0]
+            elif self.name_distribution == "exponential":
+                scale = self.params["scale"]
+                min_val = self.params["lower"]
+                max_val = self.params["upper"]
+                def truncated_exponential_inverse(scale, min_val, max_val, size=1000):
+                    cdf_min = expon.cdf(min_val, scale=scale)
+                    cdf_max = expon.cdf(max_val, scale=scale)
+                    u = np.random.uniform(cdf_min, cdf_max, size=size)
+                    return expon.ppf(u, scale=scale)
+                arrival = truncated_exponential_inverse(scale, min_val, max_val, size=1)[0]
             else:
                 arrival = getattr(np.random, self.name_distribution)(**self.params, size=1)[0]
             resource = self._process._get_resource('TRIGGER_TIMER')

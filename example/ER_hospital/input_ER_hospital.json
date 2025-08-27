@@ -1,5 +1,5 @@
 {
-    "start_timestamp": "26-08-2025 08:00:00",
+    "start_timestamp": "2025-08-26 08:00:00",
     "traces": 100,
     "interTriggerTimer": {
         "type": "distribution",
@@ -46,8 +46,12 @@
         ]
     },
     "probability": {
-        "Activity_1pepsmd": 0.20,
-        "Activity_17xx47s": 0.80
+        "Register at FD": 0.20,
+        "Register at ER": 0.80,
+        "Examination": "CUSTOM",
+        "Expert Examination": "CUSTOM",
+        "Treatment successful": "CUSTOM",
+        "Treatment unsuccessful": "CUSTOM"
     },
     "processing_time": {
         "Register at ER": {
@@ -147,7 +151,7 @@
             "name": "custom"
         }
     },
-    "activity_to_role": {
+    "resource_table": {
         "Register at ER": [
             "Nurses_day",
             "Nurses_night"

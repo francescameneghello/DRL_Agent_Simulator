@@ -41,7 +41,7 @@ class Parameters(object):
                 self.ROLE_CALENDAR = data["role_calendars"]
                 self.ROLE_ACTIVITY = dict()
                 for elem in roles_table:
-                    self.ROLE_ACTIVITY[elem['task']] = elem['role']
+                    self.ROLE_ACTIVITY[elem] = roles_table[elem]
 
                 if 'calendar' in data['interTriggerTimer'] and data['interTriggerTimer']['calendar']:
                     self.ROLE_CAPACITY = {'TRIGGER_TIMER': [math.inf, {'days': data['interTriggerTimer']['calendar']['days'], 'hour_min': data['interTriggerTimer']['calendar']['hour_min'], 'hour_max': data['interTriggerTimer']['calendar']['hour_max']}]}

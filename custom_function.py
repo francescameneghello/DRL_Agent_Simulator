@@ -43,7 +43,12 @@ def case_function_attribute(case: int, time: datetime):
         Input parameters are case id number and trace start timestamp and return a dictionary.
         For example, we generate a trace attribute, the requested loan amount, to simulate the process from the BPIChallenge2012A.xes log.
     """
-    return {}
+    '''Parameters:
+        - age(int or float): Age of the patient
+        - expert(int: 1 = expert, 0 = non - expert) ### fix after during the simulation
+        - citizen(int: 1 = citizen, 0 = not citizen)
+        - insurance(int: 1 = has private insurance, 0 = no private insurance)'''
+    return {"age": random.randint(18, 99), "expert": 0, "citizen": random.choices([0, 1], [0.10, 0.90])[0], "insurance": random.choices([0, 1], [0.80, 0.20])[0]}
 
 
 def event_function_attribute(case: int, time: datetime):
@@ -193,14 +198,32 @@ def custom_decision_mining(buffer: Buffer):
     """
     input_feature = list()
     prefix = buffer.get_feature("prefix")
-    input_feature.append(1 if 'A_PREACCEPTED' in prefix else 0)
-    input_feature.append(1 if 'A_ACCEPTED' in prefix else 0)
-    input_feature.append(1 if 'A_FINALIZED' in prefix else 0)
-    input_feature.append(buffer.get_feature("attribute_case")['AMOUNT'])
-    input_feature.append(buffer.get_feature("end_time").hour)
-    input_feature.append(buffer.get_feature("end_time").weekday())
+    if "Register" == prefix[-1]:
+        ##### gateway to decide Examination or Expert Examination
+        actual_time = buffer.get_feature("end_time")
+        if actual_time.weekday() > 4 or actual_time.hour < 14:
+            return 0 #Examination
+        else:
+            #['Activity_0j3kufo', 'Activity_0va6x20'] ---> ["Examination", "Expert Examination"]
+            prob = [0.70, 0.30]
+            value = [*range(0, len(prob), 1)]
+            return int(random.choices(value, prob)[0])
+    else:
+        ### decision point for Treatment unsuccessful or Treatment successful
+        beta_0 = -1.0  # intercept
+        beta_age = -0.05  # older age reduces success probability slightly
+        beta_expert = 1.5  # expert doctor increases probability
+        beta_citizen = 0.2  # german citizen has slight increase
+        beta_insurance = 0.7  # insurance increases probability
+        linear_score = (beta_0
+                        + beta_age * buffer.get_feature("age")
+                        + beta_expert * buffer.get_feature("expert")
+                        + beta_citizen * buffer.get_feature("citizen")
+                        + beta_insurance * buffer.get_feature("insurance"))
 
-    loaded_model = pickle.load(
-        open(os.getcwd() + '/example/example_decision_mining/random_forest.pkl', 'rb'))
-    y_pred_f = loaded_model.predict([input_feature])
-    return int(y_pred_f[0])
+        # Logistic function
+        probability = 1 / (1 + np.exp(-linear_score))
+        # ["Activity_1368wm0", "Activity_1swf9sg"] ----> ["Treatment successful", "Treatment unsuccessful"]
+        prob = [probability, 1-probability]
+        value = [*range(0, len(prob), 1)]
+        return int(random.choices(value, prob)[0])

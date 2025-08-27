@@ -54,12 +54,11 @@ if len(sys.argv) > 1:
     postpone = True if sys.argv[5] == "True" else False
     reward_function = sys.argv[6]
 else:
-    NAME_LOG = 'BPI_Challenge_2012_W_Two_TS'
+    NAME_LOG = 'ER_hospital'
     N_TRACES = 1 #'from_input_data'
     CALENDAR = True
-    threshold = 20
+    threshold = 0
     postpone = False
-#### to use BPI_Challenge_2017_W_Two_TS first download the entire log from 'https://drive.google.com/file/d/1juGeinUqaxkLBEmObIBYiRA3NqAMOcoN/view?usp=drive_link' and place it in the folder of the same name inside example
 
 if __name__ == '__main__':
     #if true, load model for a new round of training
@@ -79,7 +78,7 @@ if __name__ == '__main__':
     # Create log dir
     now = datetime.datetime.now()
     #log_dir = f"./tmp/{NAME_LOG}_{now.year}_{now.month}_{now.day}_{now.hour}_{now.minute}/"  # Logging training results
-    log_dir = f"tmp_training_2/{NAME_LOG}_{N_TRACES}_C{CALENDAR}_T{threshold}_P{postpone}_bpi12_distribution/"
+    log_dir = f"tmp_training_2/{NAME_LOG}_{N_TRACES}_C{CALENDAR}_T{threshold}_P{postpone}_ER_hospital/"
     os.makedirs(log_dir, exist_ok=True)
 
 
