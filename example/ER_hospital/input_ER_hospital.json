@@ -1,0 +1,199 @@
+{
+    "start_timestamp": "26-08-2025 08:00:00",
+    "traces": 100,
+    "interTriggerTimer": {
+        "type": "distribution",
+        "name": "exponential",
+        "parameters": {
+            "scale": 3600,
+            "lower": 0,
+            "upper": 18000
+        },
+        "calendar": {
+            "days": [0, 1, 2, 3, 4, 5],
+            "hour_min": 8,
+            "hour_max": 18
+        }
+    },
+    "role_calendars": {
+        "Nurses_day":{"days": [0, 1, 2, 3, 4, 5], "hour_min": 8, "hour_max": 14},
+        "Doctors_day":{"days": [0, 1, 2, 3, 4], "hour_min": 8, "hour_max": 14},
+        "Nurses_night":{"days": [0, 1, 2, 3, 4, 5], "hour_min": 14, "hour_max": 22},
+        "Doctors_night":{"days": [0, 1, 2, 3, 4], "hour_min": 14, "hour_max": 22}
+    },
+    "roles": {
+        "Nurses_day": [
+            "nurse_day_1",
+            "nurse_day_2",
+            "nurse_day_3",
+            "nurse_day_4",
+            "nurse_day_5"
+        ],
+        "Doctors_day": [
+            "doctor_day_1",
+            "doctor_day_2",
+            "doctor_day_3",
+            "doctor_day_4"
+        ],
+        "Nurses_night": [
+            "nurse_night_1",
+            "nurse_night_2",
+            "nurse_night_3"
+        ],
+        "Doctors_night": [
+            "doctor_night_1",
+            "doctor_night_2"
+        ]
+    },
+    "probability": {
+        "Activity_1pepsmd": 0.20,
+        "Activity_17xx47s": 0.80
+    },
+    "processing_time": {
+        "Register at ER": {
+            "name": "truncated_normal",
+            "parameters": {
+                "loc": 600,
+                "scale": 300,
+                "lower": 0,
+                "upper": 1800
+            }
+        },
+        "Register at FD": {
+            "name": "truncated_normal",
+            "parameters": {
+                "loc": 300,
+                "scale": 120,
+                "lower": 0,
+                "upper": 1800
+            }
+        },
+        "Examination": {
+            "name": "exponential",
+            "parameters": {
+                "scale": 1800,
+                "lower": 600,
+                "upper": 3600
+            }
+        },
+        "Expert Examination": {
+            "name": "exponential",
+            "parameters": {
+                "scale": 1080,
+                "lower": 300,
+                "upper": 3600
+            }
+        },
+        "W_Nabellen offertes": {
+            "name": "truncated_normal",
+            "parameters": {
+                "loc": 524,
+                "scale": 6822,
+                "lower": 0,
+                "upper": 243190
+            }
+        },
+        "Thorough Examination": {
+            "name": "exponential",
+            "parameters": {
+                "scale": 1800,
+                "lower": 0,
+                "upper": 3600
+            }
+        },
+        "Diagnosis": {
+            "name": "exponential",
+            "parameters": {
+                "scale": 1500,
+                "lower": 0,
+                "upper": 3600
+            }
+        },
+        "Treatment": {
+            "name": "custom"
+        },
+        "Treatment unsuccessful": {
+            "name": "truncated_normal",
+            "parameters": {
+                "loc": 1200,
+                "scale": 300,
+                "lower": 0,
+                "upper": 3600
+            }
+        },
+        "Treatment successful": {
+            "name": "truncated_normal",
+            "parameters": {
+                "loc": 1200,
+                "scale": 300,
+                "lower": 0,
+                "upper": 3600
+            }
+        },
+        "Discarge": {
+            "name": "exponential",
+            "parameters": {
+                "scale": 900,
+                "lower": 0,
+                "upper": 3600
+            }
+        }
+    },
+    "waiting_time": {
+        "Treatment unsuccessful": {
+            "name": "custom"
+        },
+        "Treatment successful": {
+            "name": "custom"
+        }
+    },
+    "activity_to_role": {
+        "Register at ER": [
+            "Nurses_day",
+            "Nurses_night"
+        ],
+        "Register at FD": [
+            "Nurses_day",
+            "Nurses_night"
+        ],
+        "Examination": [
+            "Doctors_day",
+            "Doctors_night"
+        ],
+        "Expert Examination": [
+            "Doctors_day",
+            "Doctors_night"
+        ],
+        "Thorough Examination":[
+            "Doctors_day",
+            "Doctors_night"
+        ],
+        "Diagnosis": [
+            "Doctors_day",
+            "Doctors_night"
+        ],
+        "Treatment": [
+            "Nurses_day",
+            "Nurses_night"
+        ],
+        "Treatment unsuccessful": [
+            "Doctors_day",
+            "Doctors_night"
+        ],
+        "Treatment successful": [
+            "Doctors_day",
+            "Doctors_night"
+        ],
+        "Discarge": [
+            "Nurses_day",
+            "Nurses_night"
+        ]
+    },
+    "LEN_prefix": 20,
+    "CYCLE_TIMES": {"Mean": 769870, "Std": 928192 },
+    "WAITING_TIMES_LOG": {"Mean": 223649, "Std": 330929 },
+    "SINGLE_WAITING_TIMES_LOG" : {"Mean": 38017, "Std": 132806 },
+    "Median_processing_time": {"W_Nabellen offertes": 523856, "W_Completeren aanvraag": 6441, "W_Nabellen incomplete dossiers": 92561, "W_Valideren aanvraag": 5524, "W_Afhandelen leads": 147, "W_Beoordelen fraude": 3147},
+    "Remain_activities": {"47b475fc-540b-4bc7-ae4d-b027826b1982": 20, "node_e7fc371e-43a5-436e-bc8c-5a385b05a697": 17, "node_02fd5aa2-75e9-4e4e-b6dc-6ea421b4b220": 15, "31ff59a0-86a0-4cdb-a38a-2d28b0b0d83f": 4, "node_accb8a94-0e1d-4166-8c54-934789533fc5": 2, "78af780b-2150-4c46-9fa3-4bb24917fdf7": 20, "node_9ffbb243-5db2-434e-b7bf-4038d45204c2": 18, "node_e92f1407-3f75-4413-9fb3-c9f9d2639060": 12, "node_8d59fd75-3056-4db1-bb58-07bfc40e4b3e": 10, "c8660b24-fa27-407f-985e-e5d1f9cae688": 4, "83128063-ccdb-4c5a-b150-589a77782aaf": 16, "aca455d4-9886-4ebf-8b6f-30dee85bc2bd": 19, "47617c96-7069-4eee-9a0a-fb622b6595f6": 20, "node_213342fd-33a8-4a7d-bbba-b56cd4a6299b": 12},
+    "max_remain_activities": 12
+}

@@ -1,0 +1,149 @@
+{
+    "start_timestamp": "2012-02-13 20:42:08",
+    "traces": 1200,
+    "traces_entire_log": 8616,
+    "interTriggerTimer": {
+        "type": "distribution",
+        "name": "truncated_normal",
+        "parameters": {
+            "loc": 1527,
+            "scale": 8784,
+            "lower": 0,
+            "upper": 158106
+        },
+        "calendar": {
+            "days": [0, 1, 2, 3, 4, 5],
+            "hour_min": 8,
+            "hour_max": 18
+        }
+    },
+    "role_calendars": {
+        "Role 1":{"days": [0, 1, 2, 3, 4, 5], "hour_min": 10, "hour_max": 21},
+        "Role 2":{"days": [0, 1, 2, 3, 4], "hour_min": 8, "hour_max": 17},
+        "Role 3":{"days": [0, 1, 2, 3, 4], "hour_min": 8, "hour_max": 17},
+        "Role 4":{"days": [0, 1, 2, 3, 4], "hour_min": 9, "hour_max": 18},
+        "Role 5":{"days": [0, 1, 2, 3, 4], "hour_min": 7, "hour_max": 12},
+        "Role 6":{"days": [0, 1, 2, 3, 4], "hour_min": 8, "hour_max": 22}
+    },
+    "roles": {
+        "Role 1": [
+            "NOT_SET",
+            "10609.0",
+            "10138.0"
+        ],
+        "Role 2": [
+            "10609.0"
+        ],
+        "Role 3": [
+            "10899.0",
+            "NOT_SET",
+            "10609.0",
+            "10138.0"
+        ],
+        "Role 4": [
+            "10935.0",
+            "10779.0",
+            "11269.0",
+            "10188.0"
+        ],
+        "Role 5": [
+            "10779.0"
+        ],
+        "Role 6": [
+            "10188.0",
+            "NOT_SET",
+            "10609.0"
+        ]
+    },
+    "probability": {
+    },
+    "processing_time": {
+        "W_Beoordelen fraude": {
+            "name": "truncated_normal",
+            "parameters": {
+                "loc": 585,
+                "scale": 5928,
+                "lower": 0,
+                "upper": 76417
+            }
+        },
+        "W_Afhandelen leads": {
+            "name": "truncated_normal",
+            "parameters": {
+                "loc": 1008,
+                "scale": 9628,
+                "lower": 0,
+                "upper": 239334
+            }
+        },
+        "W_Nabellen incomplete dossiers": {
+            "name": "truncated_normal",
+            "parameters": {
+                "loc": 746,
+                "scale": 7786,
+                "lower": 0,
+                "upper": 242763
+            }
+        },
+        "W_Valideren aanvraag": {
+            "name": "truncated_normal",
+            "parameters": {
+                "loc": 1256,
+                "scale": 5829,
+                "lower": 0,
+                "upper": 238255
+            }
+        },
+        "W_Nabellen offertes": {
+            "name": "truncated_normal",
+            "parameters": {
+                "loc": 524,
+                "scale": 6822,
+                "lower": 0,
+                "upper": 243190
+            }
+        },
+        "W_Completeren aanvraag": {
+            "name": "truncated_normal",
+            "parameters": {
+                "loc": 524,
+                "scale": 6822,
+                "lower": 0,
+                "upper": 243190
+            }
+        }
+    },
+    "resource_table": [
+        {
+            "role": "Role 6",
+            "task": "W_Beoordelen fraude"
+        },
+        {
+            "role": "Role 1",
+            "task": "W_Afhandelen leads"
+        },
+        {
+            "role": "Role 3",
+            "task": "W_Nabellen incomplete dossiers"
+        },
+        {
+            "role": "Role 5",
+            "task": "W_Valideren aanvraag"
+        },
+        {
+            "role": "Role 4",
+            "task": "W_Nabellen offertes"
+        },
+        {
+            "role": "Role 2",
+            "task": "W_Completeren aanvraag"
+        }
+    ],
+    "LEN_prefix": 20,
+    "CYCLE_TIMES": {"Mean": 769870, "Std": 928192 },
+    "WAITING_TIMES_LOG": {"Mean": 223649, "Std": 330929 },
+    "SINGLE_WAITING_TIMES_LOG" : {"Mean": 38017, "Std": 132806 },
+    "Median_processing_time": {"W_Nabellen offertes": 523856, "W_Completeren aanvraag": 6441, "W_Nabellen incomplete dossiers": 92561, "W_Valideren aanvraag": 5524, "W_Afhandelen leads": 147, "W_Beoordelen fraude": 3147},
+    "Remain_activities": {"47b475fc-540b-4bc7-ae4d-b027826b1982": 20, "node_e7fc371e-43a5-436e-bc8c-5a385b05a697": 17, "node_02fd5aa2-75e9-4e4e-b6dc-6ea421b4b220": 15, "31ff59a0-86a0-4cdb-a38a-2d28b0b0d83f": 4, "node_accb8a94-0e1d-4166-8c54-934789533fc5": 2, "78af780b-2150-4c46-9fa3-4bb24917fdf7": 20, "node_9ffbb243-5db2-434e-b7bf-4038d45204c2": 18, "node_e92f1407-3f75-4413-9fb3-c9f9d2639060": 12, "node_8d59fd75-3056-4db1-bb58-07bfc40e4b3e": 10, "c8660b24-fa27-407f-985e-e5d1f9cae688": 4, "83128063-ccdb-4c5a-b150-589a77782aaf": 16, "aca455d4-9886-4ebf-8b6f-30dee85bc2bd": 19, "47617c96-7069-4eee-9a0a-fb622b6595f6": 20, "node_213342fd-33a8-4a7d-bbba-b56cd4a6299b": 12},
+    "max_remain_activities": 12
+}

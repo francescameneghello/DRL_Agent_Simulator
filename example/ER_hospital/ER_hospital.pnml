@@ -1,0 +1,156 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<pnml>
+  <net id="" type="http://www.pnml.org/version-2009/grammar/pnmlcoremodel">
+    <name>
+      <text></text>
+    </name>
+    <page id="n0">
+      <place id="sink">
+        <name>
+          <text>sink</text>
+        </name>
+      </place>
+      <place id="exi_Gateway_11stig0">
+        <name>
+          <text>exi_Gateway_11stig0</text>
+        </name>
+      </place>
+      <place id="exi_Gateway_0k6au8a">
+        <name>
+          <text>exi_Gateway_0k6au8a</text>
+        </name>
+      </place>
+      <place id="ent_Activity_05e3ww6">
+        <name>
+          <text>ent_Activity_05e3ww6</text>
+        </name>
+      </place>
+      <place id="ent_Gateway_1c1ee6y">
+        <name>
+          <text>ent_Gateway_1c1ee6y</text>
+        </name>
+      </place>
+      <place id="source">
+        <name>
+          <text>source</text>
+        </name>
+        <initialMarking>
+          <text>1</text>
+        </initialMarking>
+      </place>
+      <place id="exi_Gateway_0ge6ava">
+        <name>
+          <text>exi_Gateway_0ge6ava</text>
+        </name>
+      </place>
+      <place id="ent_Gateway_0ci2g52">
+        <name>
+          <text>ent_Gateway_0ci2g52</text>
+        </name>
+      </place>
+      <place id="ent_Gateway_00o0she">
+        <name>
+          <text>ent_Gateway_00o0she</text>
+        </name>
+      </place>
+      <place id="ent_Activity_1cy73me">
+        <name>
+          <text>ent_Activity_1cy73me</text>
+        </name>
+      </place>
+      <transition id="Activity_1hr110c">
+        <name>
+          <text>Diagnosis</text>
+        </name>
+      </transition>
+      <transition id="Activity_1pepsmd">
+        <name>
+          <text>Register at FD</text>
+        </name>
+      </transition>
+      <transition id="Activity_17xx47s">
+        <name>
+          <text>Register at ER</text>
+        </name>
+      </transition>
+      <transition id="b6af10af-9739-4852-b866-e3855ea442c8">
+        <name>
+          <text>b6af10af-9739-4852-b866-e3855ea442c8</text>
+        </name>
+        <toolspecific tool="ProM" version="6.4" activity="$invisible$" localNodeID="1e33ee82-6b94-4544-ab84-8370f0db18c2"/>
+      </transition>
+      <transition id="Activity_1cy73me">
+        <name>
+          <text>Discarge</text>
+        </name>
+      </transition>
+      <transition id="Gateway_1c1ee6y">
+        <name>
+          <text>Gateway_1c1ee6y</text>
+        </name>
+        <toolspecific tool="ProM" version="6.4" activity="$invisible$" localNodeID="535e6b4c-dc89-4360-b0e1-c8a96ee70d3f"/>
+      </transition>
+      <transition id="Activity_0j3kufo">
+        <name>
+          <text>Examination</text>
+        </name>
+      </transition>
+      <transition id="Activity_1kxdzui">
+        <name>
+          <text>Thorough Examination</text>
+        </name>
+      </transition>
+      <transition id="Activity_0va6x20">
+        <name>
+          <text>Expert Examination</text>
+        </name>
+      </transition>
+      <transition id="Activity_1368wm0">
+        <name>
+          <text>Treatment successful</text>
+        </name>
+      </transition>
+      <transition id="Activity_05e3ww6">
+        <name>
+          <text>Treatment</text>
+        </name>
+      </transition>
+      <transition id="Activity_1swf9sg">
+        <name>
+          <text>Treatment unsuccessful</text>
+        </name>
+      </transition>
+      <arc id="140649711316512" source="Activity_0j3kufo" target="ent_Gateway_00o0she"/>
+      <arc id="140649711338496" source="exi_Gateway_11stig0" target="Activity_1368wm0"/>
+      <arc id="140649711316416" source="Activity_1pepsmd" target="ent_Gateway_1c1ee6y"/>
+      <arc id="140649711259712" source="ent_Activity_1cy73me" target="Activity_1cy73me"/>
+      <arc id="140649711338304" source="b6af10af-9739-4852-b866-e3855ea442c8" target="exi_Gateway_0ge6ava"/>
+      <arc id="140649711338592" source="exi_Gateway_0k6au8a" target="Activity_0j3kufo"/>
+      <arc id="140649711339168" source="exi_Gateway_0k6au8a" target="Activity_0va6x20"/>
+      <arc id="140649711315648" source="Activity_1hr110c" target="ent_Activity_05e3ww6"/>
+      <arc id="140649711338688" source="ent_Gateway_0ci2g52" target="Activity_1hr110c"/>
+      <arc id="140649711338208" source="Activity_1cy73me" target="sink"/>
+      <arc id="140649711337728" source="Activity_1kxdzui" target="ent_Gateway_0ci2g52"/>
+      <arc id="140648941167376" source="ent_Gateway_1c1ee6y" target="Gateway_1c1ee6y"/>
+      <arc id="140649711250208" source="ent_Activity_05e3ww6" target="Activity_05e3ww6"/>
+      <arc id="140649711338784" source="ent_Gateway_00o0she" target="Activity_1kxdzui"/>
+      <arc id="140649711337536" source="Activity_1swf9sg" target="ent_Gateway_0ci2g52"/>
+      <arc id="140649711337824" source="Activity_05e3ww6" target="exi_Gateway_11stig0"/>
+      <arc id="140649711339072" source="exi_Gateway_11stig0" target="Activity_1swf9sg"/>
+      <arc id="140649711338880" source="exi_Gateway_0ge6ava" target="Activity_17xx47s"/>
+      <arc id="140649711316896" source="Activity_1368wm0" target="ent_Activity_1cy73me"/>
+      <arc id="140649711338400" source="Activity_17xx47s" target="ent_Gateway_1c1ee6y"/>
+      <arc id="140649711316800" source="Gateway_1c1ee6y" target="exi_Gateway_0k6au8a"/>
+      <arc id="140649711250880" source="source" target="b6af10af-9739-4852-b866-e3855ea442c8"/>
+      <arc id="140649711338976" source="exi_Gateway_0ge6ava" target="Activity_1pepsmd"/>
+      <arc id="140649711316608" source="Activity_0va6x20" target="ent_Gateway_00o0she"/>
+    </page>
+    <finalmarkings>
+      <marking>
+        <place idref="sink">
+          <text>1</text>
+        </place>
+      </marking>
+    </finalmarkings>
+  </net>
+</pnml>
