@@ -35,8 +35,9 @@ class SimulationProcess(object):
         del self.role_queues['TRIGGER_TIMER']
         self.len_queues = []
 
-    def add_token_queue(self, res, token_id):
-        self.role_queues[res].append(token_id)
+    def add_token_queue(self, resources, token_id):
+        res = self._get_resource(resources)
+        self.role_queues[res._name].append(token_id)
 
     def del_token_queue(self, res, pos):
         token_id = self.role_queues[res][pos]
@@ -149,7 +150,7 @@ class SimulationProcess(object):
                 state['acc_waiting_time_'+str(idx)] = self.tokens_pending[token_id][0].acc_waiting_times
                 state['queue_waiting_time_' + str(idx)] = self._env.now - self.tokens_pending[token_id][0].time_entered_in_queue
                 ### TO ADD: remaining_cycle_time, fix remain_acts
-                remain_acts = self._params.remain_activities[self.tokens_pending[token_id][0]._trans.name]
+                remain_acts = 2 #self._params.remain_activities[self.tokens_pending[token_id][0]._trans.name]
                 state['remain_acts_' + str(idx)] = remain_acts
                 state['estimated_processing_time_' + str(idx)] = self._params.median_processing_time[self.tokens_pending[token_id][0]._trans.label]
                 state['wip_act_queue'][activity] += 1
@@ -164,7 +165,18 @@ class SimulationProcess(object):
             state['wip_act_queue'] = list(state['wip_act_queue'].values())
         return state
 
-    def _get_resource(self, res):
+    def _get_resource(self, resources):
+        ### da controllare se libera quella giusta!
+        if isinstance(resources, list):
+            now = self._date_start + timedelta(seconds=self._env.now)
+            if now.weekday() > 4:
+                res = [item for item in resources if "weekend" in item][0]
+            elif now.hour > 13:
+                res = [item for item in resources if "night" in item][0]
+            else:
+                res = [item for item in resources if "day" in item][0]
+        else:
+            res = resources
         return self._resources[res]
     def set_actual_assignment(self, id, activity, res):
         self._actual_assignment.append((id, activity, res))
