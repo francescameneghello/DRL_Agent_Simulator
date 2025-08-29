@@ -12,6 +12,7 @@ from callbacks import custom_schedule, linear_schedule
 import csv
 from stable_baselines3.common.callbacks import CallbackList, BaseCallback
 
+
 class EarlyStoppingCallback(BaseCallback):
     def __init__(self, reward_threshold, patience=5, verbose=0):
         super().__init__(verbose)

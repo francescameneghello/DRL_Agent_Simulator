@@ -9,7 +9,7 @@ import csv
 import simpy
 import utility
 from process import SimulationProcess
-from event_trace import Token
+from event_trace_old import Token
 from parameters import Parameters
 import sys, getopt
 from utility import *

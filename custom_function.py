@@ -35,6 +35,8 @@ from datetime import datetime
 import os
 import pandas as pd
 import numpy as np
+from scipy.stats import truncnorm
+from scipy.stats import expon
 
 
 def case_function_attribute(case: int, time: datetime):
@@ -92,7 +94,6 @@ def custom_resource(state, tokens_pending, time):
     pass
 
 
-
 def custom_processing_time(buffer: Buffer):
     """
     Define the processing time of the activity (return the duration in seconds).
@@ -120,10 +121,16 @@ def custom_processing_time(buffer: Buffer):
             }
     ```
     """
-    processing_time = {"Activity E": {"R5": 1.4, "R6": 1.8}, "Activity F": {"R5": 1.6, "R6": 3.0}}
-    task = buffer.get_feature("activity")
-    resource = buffer.get_feature("resource")
-    duration = np.random.exponential(processing_time[task][resource], 1)[0]
+    parameters = buffer.get_feature("activity")
+    lower = 0
+    upper = 10800
+    scale = 7200
+    def truncated_exponential_inverse(scale, min_val, max_val, size=1000):
+        cdf_min = expon.cdf(min_val, scale=scale)
+        cdf_max = expon.cdf(max_val, scale=scale)
+        u = np.random.uniform(cdf_min, cdf_max, size=size)
+        return expon.ppf(u, scale=scale)
+    duration = truncated_exponential_inverse(scale, lower, upper, size=1)[0]
     return duration
 
 
@@ -198,10 +205,10 @@ def custom_decision_mining(buffer: Buffer):
     """
     input_feature = list()
     prefix = buffer.get_feature("prefix")
-    if "Register" == prefix[-1]:
+    if "Register" in prefix[-1]:
         ##### gateway to decide Examination or Expert Examination
         actual_time = buffer.get_feature("end_time")
-        if actual_time.weekday() > 4 or actual_time.hour < 14:
+        if actual_time.weekday() > 4 or actual_time.hour > 14:
             return 0 #Examination
         else:
             #['Activity_0j3kufo', 'Activity_0va6x20'] ---> ["Examination", "Expert Examination"]
@@ -216,13 +223,14 @@ def custom_decision_mining(buffer: Buffer):
         beta_citizen = 0.2  # german citizen has slight increase
         beta_insurance = 0.7  # insurance increases probability
         linear_score = (beta_0
-                        + beta_age * buffer.get_feature("age")
-                        + beta_expert * buffer.get_feature("expert")
-                        + beta_citizen * buffer.get_feature("citizen")
-                        + beta_insurance * buffer.get_feature("insurance"))
+                        + beta_age * buffer.get_feature("attribute_case")["age"]
+                        + beta_expert * buffer.get_feature("attribute_case")["expert"]
+                        + beta_citizen * buffer.get_feature("attribute_case")["citizen"]
+                        + beta_insurance * buffer.get_feature("attribute_case")["insurance"])
 
         # Logistic function
-        probability = 1 / (1 + np.exp(-linear_score))
+        #probability = 1 / (1 + np.exp(-linear_score))
+        probability = 0.80
         # ["Activity_1368wm0", "Activity_1swf9sg"] ----> ["Treatment successful", "Treatment unsuccessful"]
         prob = [probability, 1-probability]
         value = [*range(0, len(prob), 1)]

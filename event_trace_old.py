@@ -12,6 +12,8 @@ import copy
 import csv
 from utility import Buffer, ParallelObject
 import custom_function as custom
+from scipy.stats import truncnorm
+from scipy.stats import expon
 
 
 class Token(object):
@@ -297,12 +299,32 @@ class Token(object):
             if self._params.PROCESSING_TIME[activity]["name"] == 'custom':
                 duration = self.call_custom_processing_time()
             else:
-                distribution = self._params.PROCESSING_TIME[activity]['name']
-                parameters = self._params.PROCESSING_TIME[activity]['parameters']
-                duration = getattr(np.random, distribution)(**parameters, size=1)[0]
-                if duration < 0:
-                    print("WARNING: Negative processing time",  duration)
-                    duration = 0
+                if self._params.PROCESSING_TIME[activity]['name'] == "truncated_normal":
+                    parameters = self._params.PROCESSING_TIME[activity]['parameters']
+                    lower = parameters["lower"]
+                    upper = parameters["upper"]
+                    mu = parameters["loc"]
+                    sigma = parameters["scale"]
+                    a, b = (lower - mu) / sigma, (upper - mu) / sigma
+                    duration = truncnorm.rvs(a, b, loc=mu, scale=sigma, size=1)[0]
+                elif self._params.PROCESSING_TIME[activity]['name'] == "exponential":
+                    parameters = self._params.PROCESSING_TIME[activity]['parameters']
+                    lower = parameters["lower"]
+                    upper = parameters["upper"]
+                    scale = parameters["scale"]
+                    def truncated_exponential_inverse(scale, min_val, max_val, size=1000):
+                        cdf_min = expon.cdf(min_val, scale=scale)
+                        cdf_max = expon.cdf(max_val, scale=scale)
+                        u = np.random.uniform(cdf_min, cdf_max, size=size)
+                        return expon.ppf(u, scale=scale)
+                    duration = truncated_exponential_inverse(scale, lower, upper, size=1)[0]
+                else:
+                    distribution = self._params.PROCESSING_TIME[activity]['name']
+                    parameters = self._params.PROCESSING_TIME[activity]['parameters']
+                    duration = getattr(np.random, distribution)(**parameters, size=1)[0]
+                    if duration < 0:
+                        print("WARNING: Negative processing time",  duration)
+                        duration = 0
         except:
             raise ValueError("ERROR: The processing time of", activity, "is not defined in json file")
         return duration
