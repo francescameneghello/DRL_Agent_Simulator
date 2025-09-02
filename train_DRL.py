@@ -65,7 +65,7 @@ if __name__ == '__main__':
     #if true, load model for a new round of training
     load_model = False
     postpone_penalty = 0
-    time_steps = 1000
+    time_steps = 50
     #time_steps = 10000
     n_steps = {"BPI_Challenge_2012_W_Two_TS": 1000,
             "confidential_1000": 5120,

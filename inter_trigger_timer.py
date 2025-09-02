@@ -62,11 +62,10 @@ class InterTriggerTimer(object):
             else:
                 self._interval = arrival
         elif self._type == 'custom':
-            #self._interval += self.custom_arrival(case, self._previous_date, name_log)
-            self._previous = (self.arrivals.iloc[case][0] - self._start_time).total_seconds()
+            arrival = self.custom_arrival(self._start_time + timedelta(seconds=env.now))
         else:
             raise ValueError('ERROR: Invalid arrival times generator')
-        #self._previous += self._interval
+        self._previous += arrival
         #self._previous_date = self._start_time + timedelta(seconds=self._interval)
         return self._previous
 
@@ -110,9 +109,9 @@ class InterTriggerTimer(object):
         self.arrivals = times.iloc[:num_instances]
         self.arrivals = self.arrivals.sort_values(by='timestamp')
 
-    def custom_arrival(self, case, previous, name_log):
+    def custom_arrival(self, time):
         """
         Call to the custom functions in the file custom_function.py.
         """
-        return custom.custom_arrivals_time(case, previous, name_log)
+        return custom.custom_arrivals_time(time)
 

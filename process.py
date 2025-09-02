@@ -9,11 +9,11 @@ import math
 from parameters import Parameters
 from datetime import datetime, timedelta
 import random
-
+import csv
 
 class SimulationProcess(object):
 
-    def __init__(self, env: simpy.Environment, params: Parameters, calendar):
+    def __init__(self, env: simpy.Environment, params: Parameters, calendar, queue_writer):
         self._env = env
         self._params = params
         self._date_start = params.START_SIMULATION
@@ -27,13 +27,13 @@ class SimulationProcess(object):
         self.tokens_pending = {} ### dictionary keyv = id_case, element = tokenOBJ
         self.next_assign = None
         self.calendar = calendar
-        #self.predictor = Predictor((self._params.MODEL_PATH_PROCESSING, self._params.MODEL_PATH_WAITING), self._params)
-        #self.predictor.predict()
         self.waiting_times = {}
         self.role_queues = {res: [] for res in self._resources}
         self.WINDOW_PREFIX = 5 ### da sistemare
         del self.role_queues['TRIGGER_TIMER']
         self.len_queues = []
+        self.queue_writer = csv.writer(open(queue_writer, 'w'))
+        self.queue_writer.writerow(["time", "role", "queue", "token"])
 
     def add_token_queue(self, resources, token_id):
         res = self._get_resource(resources)
@@ -41,6 +41,7 @@ class SimulationProcess(object):
 
     def del_token_queue(self, res, pos):
         token_id = self.role_queues[res][pos]
+        self.queue_writer.writerow([self._env.now, res, len(self.role_queues[res])])
         del self.role_queues[res][pos]
         return token_id
 
@@ -97,7 +98,6 @@ class SimulationProcess(object):
         #occup = occup / self._params.ROLE_CAPACITY_LSTM[role][0]
         occup = occup / len(self._params.ROLE_CAPACITY[role])
         return round(occup, 2)
-
 
     def get_state(self):
         state = {'resource_available': {}, 'resource_unavailable': {}}
@@ -178,6 +178,7 @@ class SimulationProcess(object):
         else:
             res = resources
         return self._resources[res]
+
     def set_actual_assignment(self, id, activity, res):
         self._actual_assignment.append((id, activity, res))
 
@@ -215,9 +216,6 @@ class SimulationProcess(object):
         for key in self._params.PROCESSING_TIME.keys():
             resources[key] = simpy.Resource(env, math.inf)
         return resources
-
-    def _set_single_resource(self, resource_task):
-        return self._resources[resource_task]._get_resources_name()
 
     def _release_single_resource(self, id, res, activity):
        if res != 'TRIGGER_TIMER':

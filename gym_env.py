@@ -154,7 +154,8 @@ class gym_env(Env):
         self.total_reward = 0
         self.reward_count = 0
         self.env = simpy.Environment()
-        self.simulation_process = SimulationProcess(self.env, self.params, self.CALENDAR)
+        self.queue_writer = f"output/output_{self.name_log}_C{self.CALENDAR}_T{self.threshold}_{self.policy}/queue_progression_{self.name_log}_{self.policy}.csv"
+        self.simulation_process = SimulationProcess(self.env, self.params, self.CALENDAR, self.queue_writer)
         self.completed_traces = []
         #if i != None:
 

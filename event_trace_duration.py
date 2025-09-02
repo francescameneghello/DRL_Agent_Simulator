@@ -16,6 +16,7 @@ from scipy.stats import truncnorm
 from scipy.stats import truncnorm
 from scipy.stats import expon
 
+
 class Token(object):
 
     def __init__(self, id: int, net: pm4py.objects.petri_net.obj.PetriNet, am: pm4py.objects.petri_net.obj.Marking, params: Parameters, process: SimulationProcess, prefix: Prefix, type: str,
@@ -44,7 +45,7 @@ class Token(object):
         #self.pr_wip_initial = params.PR_WIP_INITIAL
         self.calendar = calendar
         self.END = False
-        self._print = _print
+        self._print = True
         self.acc_waiting_times = 0
         self.last_reward = 0
 
@@ -102,12 +103,10 @@ class Token(object):
         resource = self._process._get_resource(resource)
         self._process.set_actual_assignment(self._id, self._trans.label, resource._get_name())
 
-        self._buffer.set_feature("ro_single", self._process.get_occupations_single_role(resource._get_name()))
 
         self._buffer.set_feature("ro_total", self._process.get_occupations_all_role(resource._get_name()))
         self._buffer.set_feature("role", resource._get_name())
 
-        self._buffer.set_feature("ro_single", self._process.get_occupations_single_role(resource._get_name()))
         self._buffer.set_feature("ro_single", self._process.get_occupations_single_role(resource._get_name()))
         #self._buffer.set_feature("ro_total", self._process.get_occupations_all_role(self._params.RESOURCE_TO_ROLE_LSTM[action['resource']]))
         self._buffer.set_feature("role", resource._get_name())
@@ -123,8 +122,8 @@ class Token(object):
         request_resource = resource.request()
         yield request_resource
 
-        #single_resource = self._process._set_single_resource(resource._get_name())
-        self._buffer.set_feature("resource", resource._get_name())
+        single_resource = resource.get_name_single_resource()
+        self._buffer.set_feature("resource", single_resource)
 
         resource_task_request = resource_task.request()
         yield resource_task_request
@@ -134,17 +133,10 @@ class Token(object):
         #self._buffer.set_feature("ro_total", self._process.get_occupations_all_role(self._params.RESOURCE_TO_ROLE_LSTM[action['resource']]))
         self._buffer.set_feature("wip_activity", resource_task.count)
 
-        #if self.calendar:
-        #    stop = resource.to_time_schedule(self._start_time + timedelta(seconds=self.env.now))
-        #    yield self.env.timeout(stop)
-        #else:
-        #    stop = 0
         self._buffer.set_feature("start_time", self._start_time + timedelta(seconds=self.env.now))
-
         self.last_reward = -(self.env.now - self._time_last_activity)
         self.acc_waiting_times += self.last_reward
         duration = self.define_processing_time(self._trans.label)
-
         yield self.env.timeout(duration)
         self._buffer.set_feature("wip_end", self._resource_trace.count)
         self._buffer.set_feature("end_time", self._start_time + timedelta(seconds=self.env.now))
@@ -154,7 +146,12 @@ class Token(object):
             self._buffer.print_values()
         self._process._release_single_resource(self._id, resource._get_name(), self._trans.label)
         resource_task.release(resource_task_request)
-        resource.release(request_resource)
+        resource.release(request_resource, single_resource)
+
+        #### waiting time after the activity "Treatment"
+        waiting_time = self.define_waiting_time(self._trans.label)
+        yield self.env.timeout(waiting_time)
+
         self._process.update_kpi_trace(self._id, self.env.now)
         self._update_marking(self._trans)
         self._trans = self.next_transition(self.env)
@@ -350,11 +347,15 @@ class Token(object):
             if self._params.WAITING_TIME[next_act]["name"] == 'custom':
                 duration = self.call_custom_waiting_time()
             else:
-                distribution = self._params.WAITING_TIME[next_act]['name']
-                parameters = self._params.WAITING_TIME[next_act]['parameters']
-                duration = getattr(np.random, distribution)(**parameters, size=1)[0]
-                if duration < 0:
-                    print("WARNING: Negative waiting time",  duration)
+                if self._params.WAITING_TIME[next_act]['name'] == "truncated_normal":
+                    parameters = self._params.WAITING_TIME[next_act]['parameters']
+                    lower = parameters["lower"]
+                    upper = parameters["upper"]
+                    mu = parameters["loc"]
+                    sigma = parameters["scale"]
+                    a, b = (lower - mu) / sigma, (upper - mu) / sigma
+                    duration = truncnorm.rvs(a, b, loc=mu, scale=sigma, size=1)[0]
+                else:
                     duration = 0
         except:
             duration = 0

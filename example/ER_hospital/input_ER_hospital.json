@@ -2,18 +2,7 @@
     "start_timestamp": "2025-08-26 08:00:00",
     "traces": 100,
     "interTriggerTimer": {
-        "type": "distribution",
-        "name": "exponential",
-        "parameters": {
-            "scale": 3600,
-            "lower": 0,
-            "upper": 18000
-        },
-        "calendar": {
-            "days": [0, 1, 2, 3, 4, 5],
-            "hour_min": 8,
-            "hour_max": 18
-        }
+        "type": "custom"
     },
     "role_calendars": {
         "Nurses_day":{"days": [0, 1, 2, 3, 4], "hour_min": 8, "hour_max": 14},
@@ -67,7 +56,7 @@
         "Register at ER": {
             "name": "truncated_normal",
             "parameters": {
-                "loc": 600,
+                "loc": 900,
                 "scale": 300,
                 "lower": 0,
                 "upper": 1800
@@ -76,7 +65,7 @@
         "Register at FD": {
             "name": "truncated_normal",
             "parameters": {
-                "loc": 300,
+                "loc": 600,
                 "scale": 120,
                 "lower": 0,
                 "upper": 1800
@@ -154,11 +143,14 @@
         }
     },
     "waiting_time": {
-        "Treatment unsuccessful": {
-            "name": "custom"
-        },
-        "Treatment successful": {
-            "name": "custom"
+        "Treatment": {
+            "name": "truncated_normal",
+            "parameters": {
+                "loc": 14400,
+                "scale": 3600,
+                "lower": 1200,
+                "upper": 21600
+            }
         }
     },
     "resource_table": {

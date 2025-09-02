@@ -51,6 +51,7 @@ Finally, in the simulation parameters file, we have to indicate the role assigne
 '''
 from datetime import timedelta
 import simpy
+import random
 
 
 class RoleSimulator(object):
@@ -59,7 +60,7 @@ class RoleSimulator(object):
         self._env = env
         self._name = name
         self._resources_name = capacity
-        self.defined_resource = capacity if type(capacity) == float else set(capacity)
+        self._defined_resource = capacity if type(capacity) == float else set(capacity)
         self._capacity = capacity if type(capacity) == float else len(capacity) #1
         self._calendar = calendar
         self._resource_simpy = simpy.Resource(env, self._capacity)
@@ -76,6 +77,13 @@ class RoleSimulator(object):
     def _get_name(self):
         return self._name
 
+    def get_name_single_resource(self):
+        single_resource = self._defined_resource.pop()
+        return single_resource
+
+    def _set_name_single_resource(self, single_resource):
+        self._defined_resource.add(single_resource)
+
     def _get_capacity(self):
         return self._capacity
 
@@ -85,11 +93,12 @@ class RoleSimulator(object):
     def _get_calendar(self):
         return self._calendar
 
-    def release(self, request):
+    def release(self, request, single_resource):
         """
         Method to release the role resource that was used to perform the activity.
         """
         self._resource_simpy.release(request)
+        self._set_name_single_resource(single_resource)
 
     def request(self):
         """
@@ -161,13 +170,6 @@ class RoleSimulator(object):
         stop_pre = self.to_time_schedule(timestamp)
         before, stop, after = self._check_duration(timestamp + timedelta(seconds=stop_pre), duration)
         return stop_pre, before + stop + after
-
-    def get_available_single_resource(self):
-        return self._resources_name
-
-    def get_anavailable_single_resource(self):
-        diff = list(self.defined_resource - set(self._resources_name))
-        return diff
 
     #def _get_resources_name(self):
     #    choiced = self._resources_name[0]

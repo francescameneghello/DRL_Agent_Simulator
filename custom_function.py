@@ -65,16 +65,26 @@ def event_function_attribute(case: int, time: datetime):
     return {}
 
 
-def custom_arrivals_time(case, previous, name_log):
+def custom_arrivals_time(time):
     """
     Function to define a new arrival of a trace. The input parameters are the case id number and the start timestamp of the previous trace.
     For example, we used an AutoRegression model for the *arrivals example*.
     """
-    path = './example/' + name_log + '/inter_arrival_rate.csv'
-    arrival = pd.read_csv(path)
-    next = datetime.strptime(arrival.loc[case].at["timestamp"], '%Y-%m-%d %H:%M:%S')
-    interval = (next - previous).total_seconds()
-    return interval
+    scale_day = 3600
+    scale_night = scale_day*2
+    min_val = 0
+    max_val = 18000
+    def truncated_exponential_inverse(scale, min_val, max_val, size=1000):
+        cdf_min = expon.cdf(min_val, scale=scale)
+        cdf_max = expon.cdf(max_val, scale=scale)
+        u = np.random.uniform(cdf_min, cdf_max, size=size)
+        return expon.ppf(u, scale=scale)
+
+    if time.hour > 18:
+        arrival = truncated_exponential_inverse(scale_night, min_val, max_val, size=1)[0]
+    else:
+        arrival = truncated_exponential_inverse(scale_day, min_val, max_val, size=1)[0]
+    return arrival
 
 def custom_resource(state, tokens_pending, time):
     '''
@@ -121,7 +131,6 @@ def custom_processing_time(buffer: Buffer):
             }
     ```
     """
-    parameters = buffer.get_feature("activity")
     lower = 0
     upper = 10800
     scale = 7200
@@ -131,6 +140,8 @@ def custom_processing_time(buffer: Buffer):
         u = np.random.uniform(cdf_min, cdf_max, size=size)
         return expon.ppf(u, scale=scale)
     duration = truncated_exponential_inverse(scale, lower, upper, size=1)[0]
+    if 'Treatment' in buffer.get_feature("prefix"):
+        duration = duration - (duration*0.20)
     return duration
 
 
@@ -217,21 +228,13 @@ def custom_decision_mining(buffer: Buffer):
             return int(random.choices(value, prob)[0])
     else:
         ### decision point for Treatment unsuccessful or Treatment successful
-        beta_0 = -1.0  # intercept
-        beta_age = -0.05  # older age reduces success probability slightly
-        beta_expert = 1.5  # expert doctor increases probability
-        beta_citizen = 0.2  # german citizen has slight increase
-        beta_insurance = 0.7  # insurance increases probability
-        linear_score = (beta_0
-                        + beta_age * buffer.get_feature("attribute_case")["age"]
-                        + beta_expert * buffer.get_feature("attribute_case")["expert"]
-                        + beta_citizen * buffer.get_feature("attribute_case")["citizen"]
-                        + beta_insurance * buffer.get_feature("attribute_case")["insurance"])
-
-        # Logistic function
-        #probability = 1 / (1 + np.exp(-linear_score))
-        probability = 0.80
+        beta_0 = 0.20  # intercept
+        beta_age = 0.20 * (buffer.get_feature("attribute_case")["age"]/99)  # older age reduces success probability slightly
+        beta_expert = 0.10 * buffer.get_feature("attribute_case")["expert"]  # expert doctor increases probability
+        beta_citizen = 0.05 * buffer.get_feature("attribute_case")["citizen"]  # german citizen has slight increase
+        beta_insurance = 0.07 * buffer.get_feature("attribute_case")["insurance"]  # insurance increases probability
+        probability = max(0, beta_0 + beta_age - beta_expert - beta_insurance - beta_citizen)
         # ["Activity_1368wm0", "Activity_1swf9sg"] ----> ["Treatment successful", "Treatment unsuccessful"]
-        prob = [probability, 1-probability]
+        prob = [1 - probability, probability]
         value = [*range(0, len(prob), 1)]
         return int(random.choices(value, prob)[0])
