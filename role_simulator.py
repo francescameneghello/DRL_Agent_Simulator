@@ -63,14 +63,25 @@ class RoleSimulator(object):
         self._defined_resource = capacity if type(capacity) == float else set(capacity)
         self._capacity = capacity if type(capacity) == float else len(capacity) #1
         self._calendar = calendar
-        self._resource_simpy = simpy.Resource(env, self._capacity)
+        self._resource_simpy = simpy.Container(env, self._capacity, init=self._capacity) #simpy.Resource(env, 1)
         self._queue = []
         self.waiting_for_calendar = True
 
     def wait_calendar(self, start_process, time=1):
         stop = self.to_time_schedule(start_process + timedelta(seconds=self._env.now))
-        self.waiting_for_calendar = True if stop > 0 else False
-        yield self._env.timeout(stop)
+        #self.waiting_for_calendar = True if stop > 0 else False
+        if (start_process + timedelta(seconds=self._env.now)).hour > 12:
+            stop = 7200
+            self._resource_simpy.get(2)
+            print("################ PRE", self._name, self._resource_simpy.level,
+                  start_process + timedelta(seconds=self._env.now))
+            yield self._env.timeout(stop)
+            self._resource_simpy.put(2)
+            print("################ POST", self._name, self._resource_simpy.level,
+                  start_process + timedelta(seconds=self._env.now))
+        else:
+            stop = 0
+        #print("################ POST", self._name, self._resource_simpy.level, start_process + timedelta(seconds=self._env.now))
         self.waiting_for_calendar = False
         #print('Res', self._name, 'Wait for calendar', stop, start_process + timedelta(seconds=self._env.now))
 
@@ -97,15 +108,17 @@ class RoleSimulator(object):
         """
         Method to release the role resource that was used to perform the activity.
         """
-        self._resource_simpy.release(request)
+        #self._resource_simpy.release(request)
+        self._resource_simpy.put(1)
         self._set_name_single_resource(single_resource)
 
     def request(self):
         """
         Method to require a resource of the role needed to perform the activity.
         """
-        self._queue.append(self._resource_simpy.queue)
-        return self._resource_simpy.request()
+        #self._queue.append(self._resource_simpy.queue)
+        #return self._resource_simpy.request()
+        return self._resource_simpy.get(1)
 
     def _check_day_work(self, timestamp):
         return True if (timestamp.weekday() in self._calendar['days']) else False

@@ -33,15 +33,15 @@ class SimulationProcess(object):
         del self.role_queues['TRIGGER_TIMER']
         self.len_queues = []
         self.queue_writer = csv.writer(open(queue_writer, 'w'))
-        self.queue_writer.writerow(["time", "role", "queue", "token"])
+        self.queue_writer.writerow(["time", "datetime", "role", "queue", "token", "activity"])
 
-    def add_token_queue(self, resources, token_id):
+    def add_token_queue(self, resources, token_id, activity):
         res = self._get_resource(resources)
         self.role_queues[res._name].append(token_id)
+        self.queue_writer.writerow([self._env.now, self._date_start + timedelta(seconds=self._env.now), res._name, len(self.role_queues[res._name]), token_id, activity])
 
     def del_token_queue(self, res, pos):
         token_id = self.role_queues[res][pos]
-        self.queue_writer.writerow([self._env.now, res, len(self.role_queues[res])])
         del self.role_queues[res][pos]
         return token_id
 
@@ -58,7 +58,6 @@ class SimulationProcess(object):
         set_resource = list(self._params.ROLE_CAPACITY.keys())
         dict_role = dict()
         for res in set_resource:
-            #if res in self._params.RESOURCE_TO_ROLE_LSTM.keys():
             res_simpy = RoleSimulator(self._env, res, self._params.ROLE_CAPACITY[res][0],
                                       self._params.ROLE_CAPACITY[res][1])
             dict_role[res] = res_simpy
@@ -69,7 +68,7 @@ class SimulationProcess(object):
         Method to retrieve the specified role occupancy in percentage, as an intercase feature:
         $\\frac{resources \: occupated \: in \:role}{total\:resources\:in\:role}$.
         """
-        occup = self._resources[resource]._get_resource().count / self._resources[resource]._capacity
+        occup = (self._resources[resource]._capacity - self._resources[resource]._get_resource().level) / self._resources[resource]._capacity
         return round(occup, 2)
 
     def get_occupations_all_role(self, role):
@@ -78,11 +77,11 @@ class SimulationProcess(object):
         """
         occup = []
         if self._params.FEATURE_ROLE == 'all_role':
-            for key in self._params.ROLE_CAPACITY_LSTM:
+            for key in self._params.ROLE_CAPACITY:
                 if key != 'SYSTEM' and key != 'TRIGGER_TIMER':
-                    occup.append(self.get_occupations_single_role_LSTM(key))
+                    occup.append(self.get_occupations_single_role(key))
         else:
-            occup.append(self.get_occupations_single_role_LSTM(role))
+            occup.append(self.get_occupations_single_role(role))
         return occup
 
     def get_occupations_single_role_LSTM(self, role):
@@ -94,7 +93,7 @@ class SimulationProcess(object):
         for res in self._resources:
             #if res != 'TRIGGER_TIMER' and res in self._params.RESOURCE_TO_ROLE_LSTM and self._params.RESOURCE_TO_ROLE_LSTM[res] == role:
             if res != 'TRIGGER_TIMER':
-                occup += self._resources[res]._get_resource().count
+                occup += role._get_resource().capacity - role._get_resource().level #self._resources[res]._get_resource().count
         #occup = occup / self._params.ROLE_CAPACITY_LSTM[role][0]
         occup = occup / len(self._params.ROLE_CAPACITY[role])
         return round(occup, 2)
@@ -104,27 +103,28 @@ class SimulationProcess(object):
         for res in self._resources:
             if res != 'TRIGGER_TIMER':
                 role = self._resources[res]
-                if role.waiting_for_calendar:
-                    state['resource_unavailable'][res] = role._get_resource().capacity
-                    state['resource_available'][res] = 0
-                else:
-                    state['resource_unavailable'][res] = role._get_resource().count
-                    state['resource_available'][res] = role._get_resource().capacity - role._get_resource().count
+                #if role.waiting_for_calendar:
+                #    state['resource_unavailable'][res] = role._get_resource().capacity
+                #    state['resource_available'][res] = 0
+                #else:
+                state['resource_unavailable'][res] = role._get_resource().capacity - role._get_resource().level  #role._get_resource().count
+                state['resource_available'][res] = role._get_resource().level  #role._get_resource().count
 
         state['actual_assignment'] = self._actual_assignment
         state['traces'] = self.traces ### {'ongoing: [(caseid, cycle_time)], 'ended': []}
         state['time'] = self._date_start + timedelta(seconds=self._env.now)
-
-
         ### state: GLOBAL (time, resource_occupation_per_role, wip, completed_tokens/tokens_to_execute),
         #state['wip'] = self._resource_trace.count
-        state['occupation_roles'] = {res: 0 if self._resources[res]._get_resource().count == 0 else self._resources[res]._get_resource().count/self._resources[res]._get_resource().capacity for res in self._resources}
-        del state['occupation_roles']['TRIGGER_TIMER']
+        #state['occupation_roles'] = {res: 0 if self._resources[res]._get_resource().level == 0 else self._resources[res]._get_resource().level/self._resources[res]._get_resource().capacity for res in self._resources}
+        it_resources = [r for r in self._resources.keys() if r != 'TRIGGER_TIMER']
+        state['occupation_roles'] = {
+            res: 0 if state['resource_unavailable'][res] == 0 else state['resource_unavailable'][res] /
+                                                                           self._resources[res]._get_resource().capacity
+            for res in it_resources}
+        #del state['occupation_roles']['TRIGGER_TIMER']
         state['ration_completed_trace'] = 0 if len(self.traces['ended']) == 0 else len(self.traces['ended'])/self._params.TRACES
-
         state['capacity_roles'] = { res: self._resources[res]._get_resource().capacity for res in self._resources}
         del state['capacity_roles']['TRIGGER_TIMER']
-
         #### find the Role free with a not empty queue
         role_designed = None
         for res in self.role_queues:
@@ -137,7 +137,6 @@ class SimulationProcess(object):
             state['role_occup'] = state['occupation_roles'][role_designed]
             state['role'] = role_designed
             state['wip_act_queue'] = {res: 0 for res in self._resource_events}
-
             #### state: window of tokens: activity, len_prefix, acc_cycle_time
             hol = []
             tokens_in_queue = self.role_queues[role_designed]
@@ -160,23 +159,22 @@ class SimulationProcess(object):
                 state['remain_cycle_times_' + str(idx)] = remain_acts * max_processing
                 for idx, act in enumerate(prefix[-self.WINDOW_PREFIX:]):
                     state['prefix_' + str(idx)] = act
-
             state['HOL'] = self._env.now - min(hol)
             state['wip_act_queue'] = list(state['wip_act_queue'].values())
         return state
 
     def _get_resource(self, resources):
         ### da controllare se libera quella giusta!
-        if isinstance(resources, list):
-            now = self._date_start + timedelta(seconds=self._env.now)
-            if now.weekday() > 4:
-                res = [item for item in resources if "weekend" in item][0]
-            elif now.hour > 13:
-                res = [item for item in resources if "night" in item][0]
-            else:
-                res = [item for item in resources if "day" in item][0]
-        else:
-            res = resources
+        #if isinstance(resources, list):
+        #    now = self._date_start + timedelta(seconds=self._env.now)
+        #    if now.weekday() > 4:
+        #        res = [item for item in resources if "weekend" in item][0]
+        #    elif now.hour > 13:
+        #        res = [item for item in resources if "night" in item][0]
+        #    else:
+        #        res = [item for item in resources if "day" in item][0]
+        #else:
+        res = resources[0] if isinstance(resources, list) else resources
         return self._resources[res]
 
     def set_actual_assignment(self, id, activity, res):
@@ -220,6 +218,3 @@ class SimulationProcess(object):
     def _release_single_resource(self, id, res, activity):
        if res != 'TRIGGER_TIMER':
             self._actual_assignment.remove((id, activity, res))
-
-    def get_predict_processing(self, cid, pr_wip, transition, ac_wip, rp_oc, time):
-        return self.predictor.processing_time(cid, pr_wip, transition, ac_wip, rp_oc, time)

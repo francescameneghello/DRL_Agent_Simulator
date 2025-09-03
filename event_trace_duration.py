@@ -69,7 +69,7 @@ class Token(object):
         self._time_last_activity = self.env.now
         self._process.update_tokens_pending(self)
         self._process._update_state_traces(self._id, self.env)
-        self._process.add_token_queue(self._params.ROLE_ACTIVITY[self._trans.label], self._id)
+        self._process.add_token_queue(self._params.ROLE_ACTIVITY[self._trans.label], self._id, self._next_activity)
         self.time_entered_in_queue = self.env.now
 
     def update_time_after_postpone(self, time):
@@ -115,7 +115,7 @@ class Token(object):
         resource_task = self._process._get_resource_event(self._trans.label)
         self._buffer.set_feature("wip_activity", resource_task.count)
 
-        queue = 0 if len(resource._queue) == 0 else len(resource._queue[-1])
+        queue = 0 #if len(resource._queue) == 0 else len(resource._queue[-1])
         self._buffer.set_feature("queue", queue)
         self._buffer.set_feature("enabled_time", self._start_time + timedelta(seconds=self._time_last_activity))
 
@@ -167,7 +167,7 @@ class Token(object):
             self.END = True
         else:
             self._process.update_tokens_pending(self)
-            self._process.add_token_queue(self._params.ROLE_ACTIVITY[self._trans.label], self._id)
+            self._process.add_token_queue(self._params.ROLE_ACTIVITY[self._trans.label], self._id, self._next_activity)
             self.time_entered_in_queue = self.env.now
 
     def _get_resource_role(self, activity):

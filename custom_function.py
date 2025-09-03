@@ -72,6 +72,7 @@ def custom_arrivals_time(time):
     """
     scale_day = 3600
     scale_night = scale_day*2
+    scale_weekend = scale_day*3
     min_val = 0
     max_val = 18000
     def truncated_exponential_inverse(scale, min_val, max_val, size=1000):
@@ -80,11 +81,14 @@ def custom_arrivals_time(time):
         u = np.random.uniform(cdf_min, cdf_max, size=size)
         return expon.ppf(u, scale=scale)
 
-    if time.hour > 18:
-        arrival = truncated_exponential_inverse(scale_night, min_val, max_val, size=1)[0]
+    if time.weekday() < 5:
+        if time.hour > 18:
+            arrival = truncated_exponential_inverse(scale_night, min_val, max_val, size=1)[0]
+        else:
+            arrival = truncated_exponential_inverse(scale_day, min_val, max_val, size=1)[0]
     else:
-        arrival = truncated_exponential_inverse(scale_day, min_val, max_val, size=1)[0]
-    return arrival
+        arrival = truncated_exponential_inverse(scale_weekend, min_val, max_val, size=1)[0]
+    return 0
 
 def custom_resource(state, tokens_pending, time):
     '''

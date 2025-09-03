@@ -22,7 +22,6 @@ class Parameters(object):
         self.threshold = threshold
         self.NAME_EXP = name_log
         self.read_metadata_file()
-        #self.parameters_LSTM_model()
 
     def read_metadata_file(self):
         '''
@@ -62,7 +61,10 @@ class Parameters(object):
             #self.ROLE_CAPACITY[key] = [roles[key]['resources'], {'days': roles[key]['calendar']['days'],
             #                                                          'hour_min': roles[key]['calendar']['hour_min'],
             #                                                          'hour_max': roles[key]['calendar']['hour_max']}]
-            self.ROLE_CAPACITY[key] = [roles[key], self.ROLE_CALENDAR[key]]
+            if self.ROLE_CALENDAR[key] == 'custom':
+                self.ROLE_CAPACITY[key] = [roles[key], "variable_custom_capacity"]
+            else:
+                self.ROLE_CAPACITY[key] = [roles[key], self.ROLE_CALENDAR[key]]
 
     def _check_default_parameters(self, data, type):
         if type == 'start_timestamp':
@@ -70,40 +72,3 @@ class Parameters(object):
         elif type == 'duration_simulation':
             value = data['duration_simulation'] if type in data else 31536000
         return value
-
-    def parameters_LSTM_model(self):
-        self.MODEL_PATH_PROCESSING = './example/' + self.NAME_EXP + '/' + self.NAME_EXP + self.prefix[1] + '.h5'
-        self.MODEL_PATH_WAITING = './example/' + self.NAME_EXP + '/' + self.NAME_EXP + self.prefix[2] + '.h5'
-        if self.threshold > 0:
-            self.METADATA = './example/' + self.NAME_EXP + '/' + self.NAME_EXP + self.prefix[0] + '_meta' + str(self.threshold) + '.json'
-        else:
-            self.METADATA = './example/' + self.NAME_EXP + '/' + self.NAME_EXP + self.prefix[0] + '_meta.json'
-        self.SCALER = './example/' + self.NAME_EXP + '/' + self.NAME_EXP + self.prefix[0] + '_scaler.pkl'
-        self.INTER_SCALER = './example/' + self.NAME_EXP + '/' + self.NAME_EXP + self.prefix[0] + '_inter_scaler.pkl'
-        self.END_INTER_SCALER = './example/' + self.NAME_EXP + '/' + self.NAME_EXP + self.prefix[0] + '_end_inter_scaler.pkl'
-        self.MODEL_PROPHET = './example/' + self.NAME_EXP + '/' + self.NAME_EXP + '_prf.json'
-        self.METADATA_PROPHET = './example/' + self.NAME_EXP + '/' + self.NAME_EXP + '_prf_meta.json'
-
-        if os.path.exists(self.METADATA):
-            with open(self.METADATA) as file:
-                data = json.load(file)
-                self.INDEX_AC = data['ac_index']
-                self.AC_WIP_INITIAL = data['inter_mean_states']['tasks']
-                self.PR_WIP_INITIAL = round(data['inter_mean_states']['wip'])
-
-                roles_table = data['roles_table']
-                self.ROLE_ACTIVITY_LSTM = dict()
-                for elem in roles_table:
-                    self.ROLE_ACTIVITY_LSTM[elem['task']] = elem['role']
-
-                self.INDEX_ROLE_LSTM = {'SYSTEM': 0}
-                self.ROLE_CAPACITY_LSTM = {'SYSTEM': [1000, {'days': [0, 1, 2, 3, 4, 5, 6], 'hour_min': 0, 'hour_max': 23}]}
-                roles = data['roles']
-                for idx, key in enumerate(roles):
-                    self.INDEX_ROLE_LSTM[key] = idx
-                    self.ROLE_CAPACITY_LSTM[key] = [len(roles[key]),
-                                               {'days': [0, 1, 2, 3, 4, 5, 6], 'hour_min': 0, 'hour_max': 23}]
-                self.RESOURCE_TO_ROLE_LSTM = {}
-                for idx, key in enumerate(roles):
-                    for resource in roles[key]:
-                        self.RESOURCE_TO_ROLE_LSTM[resource] = key

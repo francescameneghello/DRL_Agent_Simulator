@@ -5,43 +5,22 @@
         "type": "custom"
     },
     "role_calendars": {
-        "Nurses_day":{"days": [0, 1, 2, 3, 4], "hour_min": 8, "hour_max": 14},
-        "Doctors_day":{"days": [0, 1, 2, 3, 4], "hour_min": 8, "hour_max": 14},
-        "Nurses_night":{"days": [0, 1, 2, 3, 4], "hour_min": 14, "hour_max": 22},
-        "Doctors_night":{"days": [0, 1, 2, 3, 4], "hour_min": 14, "hour_max": 22},
-        "Nurses_weekend": {"days": [5, 6], "hour_min": 8, "hour_max": 22},
-        "Doctors_weekend": {"days": [5, 6], "hour_min": 8, "hour_max": 22}
+        "Nurses": {"days": [0, 1, 2, 3, 4, 5, 6], "hour_min": 0, "hour_max": 24},
+        "Doctors": {"days": [0, 1, 2, 3, 4, 5, 6], "hour_min": 0, "hour_max": 24}
     },
     "roles": {
-        "Nurses_day": [
-            "nurse_day_1",
-            "nurse_day_2",
-            "nurse_day_3",
-            "nurse_day_4",
-            "nurse_day_5"
+        "Nurses": [
+            "nurse_1",
+            "nurse_2",
+            "nurse_3",
+            "nurse_4",
+            "nurse_5"
         ],
-        "Doctors_day": [
-            "doctor_day_1",
-            "doctor_day_2",
-            "doctor_day_3",
-            "doctor_day_4"
-        ],
-        "Nurses_night": [
-            "nurse_night_1",
-            "nurse_night_2",
-            "nurse_night_3"
-        ],
-        "Doctors_night": [
-            "doctor_night_1",
-            "doctor_night_2"
-        ],
-        "Nurses_weekend": [
-            "nurse_weekend_1",
-            "nurse_weekend_2"
-        ],
-        "Doctors_weekend": [
-            "doctor_weekend_1",
-            "doctor_weekend_2"
+        "Doctors": [
+            "doctor_1",
+            "doctor_2",
+            "doctor_3",
+            "doctor_4"
         ]
     },
     "probability": {
@@ -155,54 +134,34 @@
     },
     "resource_table": {
         "Register at ER": [
-            "Nurses_day",
-            "Nurses_night",
-            "Nurses_weekend"
+            "Nurses"
         ],
         "Register at FD": [
-            "Nurses_day",
-            "Nurses_night",
-            "Nurses_weekend"
+            "Nurses"
         ],
         "Examination": [
-            "Doctors_day",
-            "Doctors_night",
-            "Doctors_weekend"
+            "Doctors"
         ],
         "Expert Examination": [
-            "Doctors_day",
-            "Doctors_night",
-            "Doctors_weekend"
+            "Doctors"
         ],
         "Thorough Examination":[
-            "Doctors_day",
-            "Doctors_night",
-            "Doctors_weekend"
+            "Doctors"
         ],
         "Diagnosis": [
-            "Doctors_day",
-            "Doctors_night",
-            "Doctors_weekend"
+            "Doctors"
         ],
         "Treatment": [
-            "Nurses_day",
-            "Nurses_night",
-            "Nurses_weekend"
+            "Nurses"
         ],
         "Treatment unsuccessful": [
-            "Doctors_day",
-            "Doctors_night",
-            "Doctors_weekend"
+            "Doctors"
         ],
         "Treatment successful": [
-            "Doctors_day",
-            "Doctors_night",
-            "Doctors_weekend"
+            "Doctors"
         ],
         "Discarge": [
-            "Nurses_day",
-            "Nurses_night",
-            "Nurses_weekend"
+            "Nurses"
         ]
     },
     "LEN_prefix": 20,
