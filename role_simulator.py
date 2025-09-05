@@ -63,27 +63,15 @@ class RoleSimulator(object):
         self._defined_resource = capacity if type(capacity) == float else set(capacity)
         self._capacity = capacity if type(capacity) == float else len(capacity) #1
         self._calendar = calendar
-        self._resource_simpy = simpy.Container(env, self._capacity, init=self._capacity) #simpy.Resource(env, 1)
+        self._resource_simpy = self._resource_simpy = simpy.Resource(env, self._capacity)
         self._queue = []
         self.waiting_for_calendar = True
 
     def wait_calendar(self, start_process, time=1):
         stop = self.to_time_schedule(start_process + timedelta(seconds=self._env.now))
-        #self.waiting_for_calendar = True if stop > 0 else False
-        if (start_process + timedelta(seconds=self._env.now)).hour > 12:
-            stop = 7200
-            self._resource_simpy.get(2)
-            print("################ PRE", self._name, self._resource_simpy.level,
-                  start_process + timedelta(seconds=self._env.now))
-            yield self._env.timeout(stop)
-            self._resource_simpy.put(2)
-            print("################ POST", self._name, self._resource_simpy.level,
-                  start_process + timedelta(seconds=self._env.now))
-        else:
-            stop = 0
-        #print("################ POST", self._name, self._resource_simpy.level, start_process + timedelta(seconds=self._env.now))
+        self.waiting_for_calendar = True if stop > 0 else False
+        yield self._env.timeout(stop)
         self.waiting_for_calendar = False
-        #print('Res', self._name, 'Wait for calendar', stop, start_process + timedelta(seconds=self._env.now))
 
     def _get_name(self):
         return self._name
@@ -108,29 +96,41 @@ class RoleSimulator(object):
         """
         Method to release the role resource that was used to perform the activity.
         """
-        #self._resource_simpy.release(request)
-        self._resource_simpy.put(1)
+        self._resource_simpy.release(request)
         self._set_name_single_resource(single_resource)
 
     def request(self):
         """
         Method to require a resource of the role needed to perform the activity.
         """
-        #self._queue.append(self._resource_simpy.queue)
-        #return self._resource_simpy.request()
-        return self._resource_simpy.get(1)
+        self._queue.append(self._resource_simpy.queue)
+        return self._resource_simpy.request()
 
     def _check_day_work(self, timestamp):
         return True if (timestamp.weekday() in self._calendar['days']) else False
 
     def _check_hour_work(self, timestamp):
-        return True if (self._calendar['hour_min'] <= timestamp.hour < self._calendar['hour_max']) else False
+        hour_min = self._calendar['hour_min_weekend'] if timestamp.weekday() > 4 else self._calendar['hour_min_week']
+        hour_max = self._calendar['hour_max_weekend'] if timestamp.weekday() > 4 else self._calendar['hour_max_week']
+        return True if (hour_min <= timestamp.hour < hour_max) else False
 
     def _define_stop_weekend(self, timestamp):
         monday = 7 - timestamp.weekday()
-        new_start = timestamp.replace(hour=self._calendar['hour_min'], minute=0, second=0) + timedelta(days=monday)
+        new_start = timestamp.replace(hour=self._calendar['hour_min_week'], minute=0, second=0) + timedelta(days=monday)
         return (new_start-timestamp).total_seconds()
 
+    def _define_stop_between_days(self, timestamp):
+        print('CALL define_stop_between_days', timestamp)
+        hour_min = self._calendar['hour_min_weekend'] if timestamp.weekday() > 4 else self._calendar['hour_min_week']
+        if timestamp.hour < hour_min:
+            stop = (timestamp.replace(hour=hour_min, minute=0, second=0) - timestamp).total_seconds()
+        else:
+            next_hour_min = self._calendar['hour_min_week'] if (timestamp.weekday() + 1) > 6 else self._calendar['hour_min_weekend']
+            new_day = timestamp.replace(hour=next_hour_min, minute=0, second=0) + timedelta(days=1)
+            stop = (new_day - timestamp).total_seconds()
+        return stop
+
+    ### previous version with jus tone interval for calendar
     def _define_stop_week(self, timestamp):
         if timestamp.hour < self._calendar['hour_min']:
             stop = (timestamp.replace(hour=self._calendar['hour_min'], minute=0, second=0) - timestamp).total_seconds()
@@ -149,40 +149,11 @@ class RoleSimulator(object):
         if not self._check_day_work(timestamp):
             stop = self._define_stop_weekend(timestamp)
         elif not self._check_hour_work(timestamp):
-            stop = self._define_stop_week(timestamp)
+            stop = self._define_stop_between_days(timestamp) #self._define_stop_week(timestamp)
         else:
             stop = 0
         return stop
 
-    def _split_week(self, timestamp, duration):
-        before = (timestamp.replace(hour=self._calendar['hour_max'], minute=0, second=0) - timestamp).seconds
-        stop = self._define_stop_week(timestamp.replace(hour=self._calendar['hour_max'], minute=0, second=0))
-        if not self._check_day_work(timestamp + timedelta(seconds=before) + timedelta(seconds=stop)):
-            stop += self._define_stop_weekend(timestamp + timedelta(seconds=before + stop))
-        after = duration - before
-        return before, stop, after
-
-    def _split_weekend(self, timestamp, duration):
-        before = (timestamp.replace(hour=self._calendar['hour_max'], minute=0, second=0) - timestamp).total_seconds
-        stop = self._define_stop_weekend(timestamp.replace(hour=self._calendar['hour_max'], minute=0, second=0))
-        after = duration - before
-        return before, stop, after
-
-    def _check_duration(self, timestamp, duration):
-        time_to_complete = timestamp + timedelta(seconds=duration)
-        before = duration
-        stop = after = 0
-        if not self._check_hour_work(time_to_complete):
-            if self._check_day_work(time_to_complete) in self._calendar['days']:
-                before, stop, after = self._split_week(timestamp, duration)
-            else:
-                before, stop, after = self._split_weekend(timestamp, duration)
-        return before, stop, after
-
-    def _define_timework(self, timestamp, duration):
-        stop_pre = self.to_time_schedule(timestamp)
-        before, stop, after = self._check_duration(timestamp + timedelta(seconds=stop_pre), duration)
-        return stop_pre, before + stop + after
 
     #def _get_resources_name(self):
     #    choiced = self._resources_name[0]

@@ -61,10 +61,7 @@ class Parameters(object):
             #self.ROLE_CAPACITY[key] = [roles[key]['resources'], {'days': roles[key]['calendar']['days'],
             #                                                          'hour_min': roles[key]['calendar']['hour_min'],
             #                                                          'hour_max': roles[key]['calendar']['hour_max']}]
-            if self.ROLE_CALENDAR[key] == 'custom':
-                self.ROLE_CAPACITY[key] = [roles[key], "variable_custom_capacity"]
-            else:
-                self.ROLE_CAPACITY[key] = [roles[key], self.ROLE_CALENDAR[key]]
+            self.ROLE_CAPACITY[key] = [roles[key], self.ROLE_CALENDAR[key]]
 
     def _check_default_parameters(self, data, type):
         if type == 'start_timestamp':

@@ -68,7 +68,7 @@ class SimulationProcess(object):
         Method to retrieve the specified role occupancy in percentage, as an intercase feature:
         $\\frac{resources \: occupated \: in \:role}{total\:resources\:in\:role}$.
         """
-        occup = (self._resources[resource]._capacity - self._resources[resource]._get_resource().level) / self._resources[resource]._capacity
+        occup = self._resources[resource]._get_resource().count / self._resources[resource]._capacity
         return round(occup, 2)
 
     def get_occupations_all_role(self, role):
@@ -93,7 +93,7 @@ class SimulationProcess(object):
         for res in self._resources:
             #if res != 'TRIGGER_TIMER' and res in self._params.RESOURCE_TO_ROLE_LSTM and self._params.RESOURCE_TO_ROLE_LSTM[res] == role:
             if res != 'TRIGGER_TIMER':
-                occup += role._get_resource().capacity - role._get_resource().level #self._resources[res]._get_resource().count
+                occup += role._get_resource().capacity - self._resources[res]._get_resource().count
         #occup = occup / self._params.ROLE_CAPACITY_LSTM[role][0]
         occup = occup / len(self._params.ROLE_CAPACITY[role])
         return round(occup, 2)
@@ -103,12 +103,12 @@ class SimulationProcess(object):
         for res in self._resources:
             if res != 'TRIGGER_TIMER':
                 role = self._resources[res]
-                #if role.waiting_for_calendar:
-                #    state['resource_unavailable'][res] = role._get_resource().capacity
-                #    state['resource_available'][res] = 0
-                #else:
-                state['resource_unavailable'][res] = role._get_resource().capacity - role._get_resource().level  #role._get_resource().count
-                state['resource_available'][res] = role._get_resource().level  #role._get_resource().count
+                if role.waiting_for_calendar:
+                    state['resource_unavailable'][res] = role._get_resource().capacity
+                    state['resource_available'][res] = 0
+                else:
+                    state['resource_unavailable'][res] = role._get_resource().count
+                    state['resource_available'][res] = role._get_resource().capacity - role._get_resource().count
 
         state['actual_assignment'] = self._actual_assignment
         state['traces'] = self.traces ### {'ongoing: [(caseid, cycle_time)], 'ended': []}
@@ -164,16 +164,6 @@ class SimulationProcess(object):
         return state
 
     def _get_resource(self, resources):
-        ### da controllare se libera quella giusta!
-        #if isinstance(resources, list):
-        #    now = self._date_start + timedelta(seconds=self._env.now)
-        #    if now.weekday() > 4:
-        #        res = [item for item in resources if "weekend" in item][0]
-        #    elif now.hour > 13:
-        #        res = [item for item in resources if "night" in item][0]
-        #    else:
-        #        res = [item for item in resources if "day" in item][0]
-        #else:
         res = resources[0] if isinstance(resources, list) else resources
         return self._resources[res]
 

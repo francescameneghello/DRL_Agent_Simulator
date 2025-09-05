@@ -88,7 +88,7 @@ def custom_arrivals_time(time):
             arrival = truncated_exponential_inverse(scale_day, min_val, max_val, size=1)[0]
     else:
         arrival = truncated_exponential_inverse(scale_weekend, min_val, max_val, size=1)[0]
-    return 0
+    return arrival
 
 def custom_resource(state, tokens_pending, time):
     '''

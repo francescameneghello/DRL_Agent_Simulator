@@ -94,9 +94,6 @@ class Token(object):
                                                               seconds=self.env.now)))
         self._buffer.set_feature("wip_wait", 0 if type != 'sequential' else self._resource_trace.count-1)
         self._buffer.set_feature("wip_wait", self._resource_trace.count)
-        #waiting = self.define_waiting_time(action['task'])
-        #if self._prefix.is_empty():
-        #    yield env.timeout(waiting)
 
         ### define resource for activity
         resource = self._params.ROLE_ACTIVITY[self._trans.label]
@@ -108,14 +105,13 @@ class Token(object):
         self._buffer.set_feature("role", resource._get_name())
 
         self._buffer.set_feature("ro_single", self._process.get_occupations_single_role(resource._get_name()))
-        #self._buffer.set_feature("ro_total", self._process.get_occupations_all_role(self._params.RESOURCE_TO_ROLE_LSTM[action['resource']]))
         self._buffer.set_feature("role", resource._get_name())
 
         ### register event in process ###
         resource_task = self._process._get_resource_event(self._trans.label)
         self._buffer.set_feature("wip_activity", resource_task.count)
 
-        queue = 0 #if len(resource._queue) == 0 else len(resource._queue[-1])
+        queue = 0 if len(resource._queue) == 0 else len(resource._queue[-1])
         self._buffer.set_feature("queue", queue)
         self._buffer.set_feature("enabled_time", self._start_time + timedelta(seconds=self._time_last_activity))
 
@@ -130,7 +126,6 @@ class Token(object):
         ### call predictor for processing time
         self._buffer.set_feature("wip_start",  self._resource_trace.count)
         self._buffer.set_feature("ro_single", self._process.get_occupations_single_role(resource._get_name()))
-        #self._buffer.set_feature("ro_total", self._process.get_occupations_all_role(self._params.RESOURCE_TO_ROLE_LSTM[action['resource']]))
         self._buffer.set_feature("wip_activity", resource_task.count)
 
         self._buffer.set_feature("start_time", self._start_time + timedelta(seconds=self.env.now))
@@ -148,10 +143,6 @@ class Token(object):
         resource_task.release(resource_task_request)
         resource.release(request_resource, single_resource)
 
-        #### waiting time after the activity "Treatment"
-        waiting_time = self.define_waiting_time(self._trans.label)
-        yield self.env.timeout(waiting_time)
-
         self._process.update_kpi_trace(self._id, self.env.now)
         self._update_marking(self._trans)
         self._trans = self.next_transition(self.env)
@@ -166,6 +157,10 @@ class Token(object):
             self._process._release_resource_trace(self._id, total_time, resource_task, self.acc_waiting_times)
             self.END = True
         else:
+            #### waiting time after the activity "Treatment"
+            waiting_time = self.define_waiting_time(self._buffer.get_feature("activity"))
+            yield self.env.timeout(waiting_time)
+            self._time_last_activity = self.env.now
             self._process.update_tokens_pending(self)
             self._process.add_token_queue(self._params.ROLE_ACTIVITY[self._trans.label], self._id, self._next_activity)
             self.time_entered_in_queue = self.env.now
