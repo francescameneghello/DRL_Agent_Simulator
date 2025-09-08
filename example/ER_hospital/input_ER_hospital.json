@@ -13,15 +13,12 @@
             "nurse_1",
             "nurse_2",
             "nurse_3",
-            "nurse_4",
-            "nurse_5",
-            "nurse_6"
+            "nurse_4"
         ],
         "Doctors": [
             "doctor_1",
             "doctor_2",
-            "doctor_3",
-            "doctor_4"
+            "doctor_3"
         ]
     },
     "probability": {

@@ -43,10 +43,10 @@ class gym_env(Env):
         self.normalization_cycle_time = 10000#= self.normalization_cycle_times[self.name_log] if normalization else 0
         self.policy = POLICY
         self.print = True
-        if threshold > 0:
-            input_file = './example/' + self.name_log + '/input_' + self.name_log + str(threshold) + '.json'
-        else:
-            input_file = './example/' + self.name_log + '/input_' + self.name_log + '.json'
+        #if threshold > 0:
+        #    input_file = './example/' + self.name_log + '/input_' + self.name_log + str(threshold) + '.json'
+        #else:
+        input_file = './example/' + self.name_log + '/input_' + self.name_log + '.json'
         with open(input_file, 'r') as f:
             input_data = json.load(f)
         self.n_simulation = N_SIMULATION
@@ -108,16 +108,10 @@ class gym_env(Env):
         self.output = [i for i in range(0, self.WINDOW_SIZE)]
 
         path_model = './example/' + self.name_log + '/' + self.name_log
-        if exists(path_model + '_diapr_meta.json'):
-            self.FEATURE_ROLE = 'all_role'
-        elif exists(path_model + '_dispr_meta.json'):
-            self.FEATURE_ROLE = 'no_all_role'
-        else:
-            self.FEATURE_ROLE = None
+        self.FEATURE_ROLE = None
         self.PATH_PETRINET = './example/' + self.name_log + '/' + self.name_log + '.pnml'
         PATH_PARAMETERS = input_file
 
-        
         self.PATH_LOG = './example/' + self.name_log + '/' + self.name_log + '.xes'
         self.params = Parameters(PATH_PARAMETERS, self.N_TRACES, self.name_log, self.FEATURE_ROLE, threshold)
 
@@ -154,7 +148,7 @@ class gym_env(Env):
         self.total_reward = 0
         self.reward_count = 0
         self.env = simpy.Environment()
-        self.queue_writer = f"output/output_{self.name_log}_C{self.CALENDAR}_T{self.threshold}_{self.policy}/queue_progression_{self.name_log}_{self.policy}.csv"
+        self.queue_writer = f"output/output_{self.name_log}_C{self.CALENDAR}_{self.policy}/queue_progression_{self.name_log}_{self.policy}.csv"
         self.simulation_process = SimulationProcess(self.env, self.params, self.CALENDAR, self.queue_writer)
         self.completed_traces = []
         #if i != None:

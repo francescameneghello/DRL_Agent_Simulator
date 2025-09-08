@@ -56,9 +56,9 @@ if len(sys.argv) > 1:
     reward_function = sys.argv[6]
 else:
     NAME_LOG = 'ER_hospital'
-    N_TRACES = 1 #'from_input_data'
+    N_TRACES = 500 #'from_input_data'
     CALENDAR = True
-    threshold = 0
+    threshold = None
     postpone = False
 
 if __name__ == '__main__':
@@ -73,7 +73,7 @@ if __name__ == '__main__':
             "PurchasingExample": 5120,
             "BPI_Challenge_2017_W_Two_TS": 48128,
             "Productions": 1280,
-            "ER_hospital": 30} ## 5120
+            "ER_hospital": 1000} ## 5120
     n_steps = n_steps[NAME_LOG] # Number of steps for each network update
 
     # Create log dir

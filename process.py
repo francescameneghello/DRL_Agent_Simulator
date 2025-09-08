@@ -104,7 +104,7 @@ class SimulationProcess(object):
         for res in self._resources:
             if res != 'TRIGGER_TIMER':
                 role = self._resources[res]
-                if role.waiting_for_calendar or not role._check_hour_work(now_timestamp):
+                if role.waiting_for_calendar: #or not role._check_hour_work(now_timestamp):
                     state['resource_unavailable'][res] = role._get_resource().capacity
                     state['resource_available'][res] = 0
                 else:
