@@ -159,6 +159,8 @@ class Token(object):
         else:
             #### waiting time after the activity "Treatment"
             waiting_time = self.define_waiting_time(self._buffer.get_feature("activity"))
+            if waiting_time>0:
+                stop = resource.to_time_schedule(self._start_time + timedelta(seconds=self.env.now+waiting_time))
             yield self.env.timeout(waiting_time)
             self._time_last_activity = self.env.now
             self._process.update_tokens_pending(self)

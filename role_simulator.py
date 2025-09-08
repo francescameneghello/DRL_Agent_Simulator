@@ -120,7 +120,6 @@ class RoleSimulator(object):
         return (new_start-timestamp).total_seconds()
 
     def _define_stop_between_days(self, timestamp):
-        print('CALL define_stop_between_days', timestamp)
         hour_min = self._calendar['hour_min_weekend'] if timestamp.weekday() > 4 else self._calendar['hour_min_week']
         if timestamp.hour < hour_min:
             stop = (timestamp.replace(hour=hour_min, minute=0, second=0) - timestamp).total_seconds()
