@@ -1,12 +1,12 @@
 {
-    "start_timestamp": "2025-08-30 10:00:00",
+    "start_timestamp": "2025-08-30 18:00:00",
     "traces": 100,
     "interTriggerTimer": {
         "type": "custom"
     },
     "role_calendars": {
-        "Nurses": {"days": [0, 1, 2, 3, 4, 5, 6], "hour_min_week": 8, "hour_max_week": 20, "hour_min_weekend": 8, "hour_max_weekend": 14},
-        "Doctors": {"days": [0, 1, 2, 3, 4, 5, 6], "hour_min_week": 8, "hour_max_week": 20, "hour_min_weekend": 8, "hour_max_weekend": 14}
+        "Nurses": {"days": [0, 1, 2, 3, 4, 5, 6], "hour_min_week": 8, "hour_max_week": 20, "hour_min_weekend": 8, "hour_max_weekend": 13},
+        "Doctors": {"days": [0, 1, 2, 3, 4, 5, 6], "hour_min_week": 8, "hour_max_week": 20, "hour_min_weekend": 8, "hour_max_weekend": 13}
     },
     "roles": {
         "Nurses": [

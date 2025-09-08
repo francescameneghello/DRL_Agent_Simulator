@@ -251,13 +251,6 @@ class gym_env(Env):
             token_id = self.simulation_process.del_token_queue(res, action)
             simulation = self.tokens[token_id].simulation()
             self.env.process(simulation)
-            start = self.simulation_process._date_start
-            for res in self.simulation_process._resources:
-                if res != 'TRIGGER_TIMER':
-                    role = self.simulation_process._get_resource(res)
-                    if not role.waiting_for_calendar:
-                        self.env.process(role.wait_calendar(start))
-
             self.next_decision_moment()
         else:
             ##### se Postpone fai passare un tempo X alla risorsa prima di renderla di nuovo disponibile
@@ -324,6 +317,7 @@ class gym_env(Env):
             if not start and self.env.peek() == math.inf: ## no more traces ongoing
                 next_step = False
             else:
+                previous_state = self.simulation_process.get_state()
                 self.env.step()
                 start = False
                 actual_state = self.simulation_process.get_state()
@@ -332,6 +326,17 @@ class gym_env(Env):
                     ### an available resource with at least one token in its queue
                     if state_res[res] > 0 and len(self.simulation_process.role_queues[res]) > 0:
                         next_step = False
+                    elif previous_state['resource_available'] != actual_state['resource_available']:
+                        resource_release = [True if actual_state['resource_available'][key] > previous_state['resource_available'][key] else False for key in previous_state['resource_available']]
+                        #print("PREVIOUS", previous_state['resource_available'], "ACTUAL", actual_state['resource_available'], resource_release)
+                        time_now = self.simulation_process._date_start
+                        if sum(resource_release) > 0:
+                            for res in self.simulation_process._resources:
+                                if res != 'TRIGGER_TIMER':
+                                    role = self.simulation_process._get_resource(res)
+                                    if not role.waiting_for_calendar:
+                                        self.env.process(role.wait_calendar(time_now))
+                    previous_state = actual_state
             self.delete_tokens_ended()
 
     def get_state(self):

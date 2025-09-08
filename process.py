@@ -100,10 +100,11 @@ class SimulationProcess(object):
 
     def get_state(self):
         state = {'resource_available': {}, 'resource_unavailable': {}}
+        now_timestamp = self._date_start + timedelta(seconds=self._env.now)
         for res in self._resources:
             if res != 'TRIGGER_TIMER':
                 role = self._resources[res]
-                if role.waiting_for_calendar:
+                if role.waiting_for_calendar or not role._check_hour_work(now_timestamp):
                     state['resource_unavailable'][res] = role._get_resource().capacity
                     state['resource_available'][res] = 0
                 else:
@@ -112,7 +113,7 @@ class SimulationProcess(object):
 
         state['actual_assignment'] = self._actual_assignment
         state['traces'] = self.traces ### {'ongoing: [(caseid, cycle_time)], 'ended': []}
-        state['time'] = self._date_start + timedelta(seconds=self._env.now)
+        state['time'] = now_timestamp
         ### state: GLOBAL (time, resource_occupation_per_role, wip, completed_tokens/tokens_to_execute),
         #state['wip'] = self._resource_trace.count
         #state['occupation_roles'] = {res: 0 if self._resources[res]._get_resource().level == 0 else self._resources[res]._get_resource().level/self._resources[res]._get_resource().capacity for res in self._resources}

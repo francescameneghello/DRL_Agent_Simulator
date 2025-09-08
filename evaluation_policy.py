@@ -173,7 +173,7 @@ if len(sys.argv) > 1:
 else:
     model = None
     NAME_LOG = "ER_hospital" #'PurchasingExample'#'BPI_Challenge_2017_W_Two_TS', 'confidential_1000', 'ConsultaDataMining201618','PurchasingExample'
-    N_TRACES = 1
+    N_TRACES = 500
     CALENDAR = True
     THRESHOLD = 0
     POLICY = 'RANDOM'
