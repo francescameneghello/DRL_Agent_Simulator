@@ -78,10 +78,8 @@ if __name__ == '__main__':
 
     # Create log dir
     now = datetime.datetime.now()
-    #log_dir = f"./tmp/{NAME_LOG}_{now.year}_{now.month}_{now.day}_{now.hour}_{now.minute}/"  # Logging training results
-    log_dir = f"tmp_training_2/{NAME_LOG}_{N_TRACES}_C{CALENDAR}_T{threshold}_P{postpone}_ER_hospital/"
+    log_dir = f"tmp_training/single_reward/defaultMLP_{NAME_LOG}_{N_TRACES}_C{CALENDAR}_T{threshold}_P{postpone}_ER_hospital/"
     os.makedirs(log_dir, exist_ok=True)
-
 
     ### save n_steps for simulation
     path_step = log_dir + "n_steps.csv"
@@ -110,9 +108,8 @@ if __name__ == '__main__':
     # Train the agent
     eval_env = gym_env(NAME_LOG, N_TRACES, CALENDAR, threshold=threshold, postpone=postpone, path_step=path_step)  # Initialize env
     eval_env = Monitor(eval_env, log_dir)
-    nr_evaluations = 1 if NAME_LOG != 'BPI_Challenge_2017_W_Two_TS' else 3
+    nr_evaluations = 1 #if NAME_LOG != 'BPI_Challenge_2017_W_Two_TS' else 3
     eval_callback = EvalPolicyCallback(check_freq=5*int(n_steps), nr_evaluations=nr_evaluations, log_dir=log_dir, eval_env=eval_env)
-    #save_best_callback = SaveOnBestTrainingRewardCallback(check_freq=1000, log_dir=log_dir)
 
     callback = CallbackList([eval_callback])
 

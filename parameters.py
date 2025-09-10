@@ -9,16 +9,11 @@ from datetime import datetime
 
 class Parameters(object):
 
-    def __init__(self, path_parameters: str, traces: int, name_log: str, feature_role: str, threshold=0):
+    def __init__(self, path_parameters: str, traces: int, name_log: str, threshold=0):
         self.TRACES = traces
         """TRACES: number of traces to generate"""
         self.PATH_PARAMETERS = path_parameters
         """PATH_PARAMETERS: path of json file for others parameters. """
-        self.FEATURE_ROLE = feature_role
-        if self.FEATURE_ROLE == 'all_role':
-            self.prefix = ('_diapr', '_dpiapr', '_dwiapr')
-        else:
-            self.prefix = ('_dispr', '_dpispr', '_dwispr')
         self.threshold = threshold
         self.NAME_EXP = name_log
         self.read_metadata_file()

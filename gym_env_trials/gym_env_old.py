@@ -40,9 +40,12 @@ class gym_env(Env):
         self.reward_count = 0
         self.path_step = path_step
 
-        self.normalization_acc_waiting_times = 5000
+        self.normalization_cycle_time = 10000#= self.normalization_cycle_times[self.name_log] if normalization else 0
         self.policy = POLICY
         self.print = True
+        #if threshold > 0:
+        #    input_file = './example/' + self.name_log + '/input_' + self.name_log + str(threshold) + '.json'
+        #else:
         input_file = './example/' + self.name_log + '/input_' + self.name_log + '.json'
         with open(input_file, 'r') as f:
             input_data = json.load(f)
@@ -67,27 +70,52 @@ class gym_env(Env):
         # For each token in the window: activity, len_prefix, acc_cycle_time
         #
         #
-        self.WINDOW_SIZE = 0
-        self.WINDOW_PREFIX = 0
+        self.WINDOW_SIZE = 5
+        self.WINDOW_PREFIX = 5
 
         ## TIME: 'month', 'day', 'hour', 'estimated_processing_time_', 'remain_cycle_times_',  'queue_waiting_time_', 'acc_waiting_time_'+str(i),
         ## CF: 'actual_activity_'+str(i), 'len_prefix_'+str(i), 'prefix_', 'remain_acts_'
         ## CONGESTION: 'actual_role', roles_occup, 'actual_role', 'role_queue', 'role_occup', 'role_capacity',
             # 'HOL', 'ratio_traces', 'wip_act_queue_',  'queue_waiting_time_', 'acc_waiting_time_'+str(i),
-        self.input = ['month', 'day', 'hour']
-        self.input += ['actual_role', 'role_queue', 'role_occup', 'role_capacity']
 
-        print('INPUT', self.input, len(self.input))
+        if self.features == 'time' or self.features == 'all':
+            self.input = ['month', 'day', 'hour']
+        if self.features == 'congestion' or self.features == 'all':
+            roles_occup = [resource + '_role_occup' for resource in self.resources]
+            self.input += ['actual_role', 'role_queue', 'role_occup', 'role_capacity', 'HOL'] + roles_occup + ['ratio_traces'] ## general features
+            for i in range(0, len(self.task_types)-1):
+                self.input += ['wip_act_queue_'+str(i)]
+        for i in range(0, self.WINDOW_SIZE):
+            if self.features == 'time':
+                self.input += ['acc_waiting_time_'+str(i), 'queue_waiting_time_'+str(i),
+                           'remain_acts_'+str(i), 'estimated_processing_time_'+str(i), 'remain_cycle_times_'+str(i)]
+            if self.features == 'congestion':
+                self.input += ['acc_waiting_time_' + str(i), 'queue_waiting_time_' + str(i)]
+            if self.features == 'control_flow':
+                self.input += ['actual_activity_' + str(i), 'len_prefix_' + str(i)]
+                self.input += ['prefix_' + str(i) for i in range(self.WINDOW_PREFIX)]
+            if self.features == 'all':
+                self.input += ['actual_activity_'+str(i), 'len_prefix_'+str(i), 'acc_waiting_time_'+str(i), 'queue_waiting_time_'+str(i),
+                               'remain_acts_'+str(i), 'estimated_processing_time_'+str(i), 'remain_cycle_times_'+str(i)]  ### info_for_each_token_in_the_window
+                self.input += ['prefix_'+str(i) for i in range(self.WINDOW_PREFIX)] ### add also the prefix of the last 5 activities performes
+
+        print('INPUT', self.input)
         print("###############################################################")
+        # priority of the token in the queue i.e. a number from 0 to 9
+        #self.output = [i for i in range(0, self.WINDOW_SIZE)]
+        #if self.postpone: # Add postpone action
+        #    self.output += ['Postpone']
         self.output = [i for i in range(0, self.WINDOW_SIZE)]
 
+        path_model = './example/' + self.name_log + '/' + self.name_log
         self.FEATURE_ROLE = None
         self.PATH_PETRINET = './example/' + self.name_log + '/' + self.name_log + '.pnml'
         PATH_PARAMETERS = input_file
 
         self.PATH_LOG = './example/' + self.name_log + '/' + self.name_log + '.xes'
-        self.params = Parameters(PATH_PARAMETERS, self.N_TRACES, self.name_log, threshold)
+        self.params = Parameters(PATH_PARAMETERS, self.N_TRACES, self.name_log, self.FEATURE_ROLE, threshold)
 
+        print(len(self.input), len(self.output))
         # Observation space
         ### define the minimum and maximum values that each output can have
         lows = np.array([0 for _ in range(len(self.input))])
@@ -97,8 +125,11 @@ class gym_env(Env):
                                             shape=(len(self.input),),
                                             dtype=np.float64)
 
+        # Action space
+        #self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(1,), dtype=np.float32)
+
         self.action_space = spaces.Discrete(len(self.output))
-        print('ACTION SPACE', self.action_space, len(self.output))
+        print('ACTION SPACE', self.action_space)
         print("###############################################################")
 
         self.processes = []
@@ -108,6 +139,7 @@ class gym_env(Env):
 
         print(f'{self.name_log}, {self.N_TRACES}, calendar={self.CALENDAR}, postpone={self.postpone}', flush=True)
         warnings.filterwarnings("ignore")
+
 
     # Reset the environment -> restart simulation
 
@@ -119,6 +151,7 @@ class gym_env(Env):
         self.queue_writer = f"output/output_{self.name_log}_C{self.CALENDAR}_{self.policy}/queue_progression_{self.name_log}_{self.policy}.csv"
         self.simulation_process = SimulationProcess(self.env, self.params, self.CALENDAR, self.queue_writer)
         self.completed_traces = []
+        #if i != None:
 
         if self.print:
             calendar = 'CALENDAR' if self.CALENDAR else 'NOT_CALENDAR'
@@ -198,7 +231,7 @@ class gym_env(Env):
             isTerminated = True
             self.waiting_times = list(self.simulation_process.waiting_times.values())
             info = {'mean': np.mean(self.waiting_times), 'percentile': np.percentile(self.waiting_times, 95)}
-            print('Percentile', np.percentile(self.waiting_times, 95))
+            print('Mean waiting times', np.mean(self.waiting_times), 'Percentile', np.percentile(self.waiting_times, 95))
         else:
             isTerminated = False
         return self.get_state(), reward, isTerminated, {}, info
@@ -230,7 +263,8 @@ class gym_env(Env):
             percentile = np.percentile(self.waiting_times, 95)
             reward = -(1 / (percentile + 1))
             info = {'mean': np.mean(self.waiting_times), 'percentile': np.percentile(self.waiting_times, 95)}
-            print('Percentile', np.percentile(self.waiting_times, 95))
+            print('Mean waiting times', np.mean(self.waiting_times), 'Percentile',
+                  np.percentile(self.waiting_times, 95))
             if self.path_step:
                 self.save_n_steps_simulation()
         else:
@@ -292,6 +326,7 @@ class gym_env(Env):
                         next_step = False
                     elif previous_state['resource_available'] != actual_state['resource_available']:
                         resource_release = [True if actual_state['resource_available'][key] > previous_state['resource_available'][key] else False for key in previous_state['resource_available']]
+                        #print("PREVIOUS", previous_state['resource_available'], "ACTUAL", actual_state['resource_available'], resource_release)
                         time_now = self.simulation_process._date_start
                         if sum(resource_release) > 0:
                             for res in self.simulation_process._resources:
@@ -308,13 +343,19 @@ class gym_env(Env):
 
         ### GLOBAL # The general inputs are: month, day, hour, roles occupations, ratio_completed_traces,
         time = [env_state['time'].month/12, env_state['time'].weekday()/6, (env_state['time'].hour*3600 + env_state['time'].minute*60 + env_state['time'].second)/(24*3600)]
-
+        occupation_roles = [env_state['occupation_roles'][r] for r in env_state['occupation_roles']]
+        tokens_running = env_state['ration_completed_trace'] ### already a number from 0 to 1
+        
         ### ROLE-QUEUE ####  Queue info: role, #tokens_queue, role_occup, role_capacity
+        tokens_features = []
         if 'role' in env_state:
             role = (self.resources.index(env_state['role'])/len(self.resources))+1
             queue = 1 / (1 + math.exp(-env_state['role_queue']))
             role_occup = env_state['occupation_roles'][env_state['role']]
             role_capacity = 1 / (1 + math.exp(-env_state['capacity_roles'][env_state['role']]))  ### normalize
+            tokens_in_queue = self.simulation_process.role_queues[env_state['role']]
+            hol = (env_state['HOL'] - self.params.WAITING_TIMES_SINGLE['Mean'])/self.params.WAITING_TIMES_SINGLE['Std']
+            wip_act_queue = [n/self.WINDOW_SIZE for n in env_state['wip_act_queue']]
         else:
             role = 0
             queue = 1 / (1 + math.exp(1))
@@ -324,7 +365,40 @@ class gym_env(Env):
             hol = 0
             wip_act_queue = []
 
-        array = time
-        array += [role, queue, role_occup, role_capacity]
+        # For each token in the window: activity, len_prefix, acc_cycle_time
+        # dummy_value == 0
+        ## add also the prefix of each token, as the last 5 activities performed
+        tokens_in_queue = tokens_in_queue[:self.WINDOW_SIZE] ### keep the first k tokens in the window
+        for i in range(len(tokens_in_queue)):
+            activity = self.task_types.index(env_state['actual_activity_'+str(i)])
+            tokens_features.append(activity/(len(self.task_types)+1)) ## normalize activity
+            tokens_features.append(min(1, (env_state['len_prefix_'+str(i)]+1)/self.params.LEN_prefix)) ### len prefix
+            normalize_acc = (env_state['acc_waiting_time_'+str(i)] - self.params.WAITING_TIMES_LOG['Mean'])/self.params.WAITING_TIMES_LOG['Std']
+            tokens_features.append(normalize_acc) ## acc_waiting time
+            normalize_wait_queue = (env_state['queue_waiting_time_' + str(i)] - self.params.WAITING_TIMES_SINGLE['Mean']) / self.params.WAITING_TIMES_SINGLE['Std']
+            tokens_features.append(normalize_wait_queue) ## queue waiting time
+            tokens_features.append(env_state['remain_acts_'+ str(i)]/max(self.params.remain_activities.values())) ## remain_acts
+            normalize_processing = (env_state['estimated_processing_time_' + str(i)] - self.params.cycle_times['Mean']) / \
+                            self.params.cycle_times['Std']
+            tokens_features.append(normalize_processing) ### estimated processing time
+            normalize_cycle = (env_state['remain_cycle_times_' + str(i)] - self.params.cycle_times['Mean']) / \
+                            self.params.cycle_times['Std'] ## remain cycle time
+            tokens_features.append(normalize_cycle)
+            for idx_e in range(self.WINDOW_PREFIX):
+                prefix_label = 'prefix_' + str(idx_e)
+                if prefix_label in env_state:
+                    type = self.task_types.index(env_state[prefix_label])
+                else:
+                    type = self.task_types.index('PAD')
+                tokens_features.append(type/(len(self.task_types)+1))
+        size = self.WINDOW_PREFIX + 7
+        if len(tokens_features) < self.WINDOW_SIZE*size:
+            token_to_add = int((self.WINDOW_SIZE*size - len(tokens_features))/size)
+            for i in range(0, token_to_add):
+                tokens_features += [0]*size
+
+        array = time + occupation_roles + [tokens_running]
+        array += [role, queue, role_occup, role_capacity, hol] + wip_act_queue
+        array += tokens_features
         return np.array(array)
 

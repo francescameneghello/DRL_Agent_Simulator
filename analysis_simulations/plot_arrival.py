@@ -21,6 +21,10 @@ for f, label in zip(files, labels):
         log.loc[log['activity'] == 'start', "start_time"]
     )
 
+    log_without_start = log[log['activity'] != 'start']
+    grouped = log_without_start.groupby("id_case")["queue"].sum().tolist()
+    print(min(grouped))
+
     # Plot each run slightly offset vertically for visibility
     plt.scatter(
         arrival_times,
