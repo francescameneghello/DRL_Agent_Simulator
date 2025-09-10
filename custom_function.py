@@ -70,7 +70,7 @@ def custom_arrivals_time(time):
     Function to define a new arrival of a trace. The input parameters are the case id number and the start timestamp of the previous trace.
     For example, we used an AutoRegression model for the *arrivals example*.
     """
-    scale_day = 1800
+    scale_day = 7200
     scale_night = scale_day*2
     scale_weekend = scale_day*3
     min_val = 0

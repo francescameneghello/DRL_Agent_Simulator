@@ -3,20 +3,20 @@ import matplotlib.pyplot as plt
 
 # List of CSVs (different dates/runs)
 files = [
-    "../output/queue/queue_progression_ER_hospital_RANDOM_1800.csv",
-    "../output/queue/queue_progression_ER_hospital_RANDOM_3600.csv",
-    "../output/queue/queue_progression_ER_hospital_RANDOM_7200.csv"
+    "../output/queue/queue_progression_ER_hospital_FIFO_activity_1800.csv",
+    "../output/queue/queue_progression_ER_hospital_FIFO_activity_3600.csv",
+    "../output/queue/queue_progression_ER_hospital_FIFO_activity_7200.csv"
 ]
 
-files = [
-    "../output/output_ER_hospital_CTrue_FIFO_activity/queue_progression_ER_hospital_FIFO_activity.csv",
-    "../output/output_ER_hospital_CTrue_RANDOM/queue_progression_ER_hospital_RANDOM.csv",
-    "../output/output_ER_hospital_CTrue_FIFO_case/queue_progression_ER_hospital_FIFO_case.csv"
-]
+#files = [
+#    "../output/output_ER_hospital_CTrue_FIFO_activity/queue_progression_ER_hospital_FIFO_activity_3600.csv",
+#    "../output/output_ER_hospital_CTrue_RANDOM/queue_progression_ER_hospital_RANDOM.csv",
+#    "../output/output_ER_hospital_CTrue_FIFO_case/queue_progression_ER_hospital_FIFO_case.csv"
+#]
 
 labels = ["Exp1800", "Exp3600", "Exp7200"]  # names for legend
 
-labels = ["FIFO_activity", "Random", "FIFO_case"]
+#labels = ["FIFO_activity", "Random", "FIFO_case"]
 
 # Load all logs
 logs = [pd.read_csv(f) for f in files]

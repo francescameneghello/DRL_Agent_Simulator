@@ -9,7 +9,7 @@ files = [
     "../output/arrivals/simulated_log_ER_hospital_RANDOM_0_7200.csv"
 ]
 
-labels = ["Exp1800", "Exp3600", "Exp7200"]
+labels = ["Exp30min", "Exp1hour", "Exp2hour"]
 
 plt.figure(figsize=(12, 5))
 
@@ -30,7 +30,7 @@ for f, label in zip(files, labels):
         label=label
     )
 
-plt.title("Arrival Times Across Runs")
+plt.title("Arrival Times")
 plt.xlabel("Time")
 plt.yticks(range(len(labels)), labels)  # Show run names on y-axis
 plt.grid(True, axis="x")

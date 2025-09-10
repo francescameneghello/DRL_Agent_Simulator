@@ -175,9 +175,9 @@ else:
     NAME_LOG = "ER_hospital" #'PurchasingExample'#'BPI_Challenge_2017_W_Two_TS', 'confidential_1000', 'ConsultaDataMining201618','PurchasingExample'
     N_TRACES = 500
     CALENDAR = True
-    THRESHOLD = 'Exp1800'
-    POLICY = 'FIFO_case'
-    N_SIMULATION = 5
+    THRESHOLD = 'Exp7200'
+    POLICY = 'FIFO_activity'
+    N_SIMULATION = 1
 
 if POLICY == 'SPT':
     median_processing_time = retrieve_median_processing_time(NAME_LOG)
