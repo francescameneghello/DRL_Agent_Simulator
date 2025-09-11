@@ -67,7 +67,7 @@ class gym_env(Env):
         # For each token in the window: activity, len_prefix, acc_cycle_time
         #
         #
-        self.WINDOW_SIZE = 0
+        self.WINDOW_SIZE = 40
         self.WINDOW_PREFIX = 0
 
         ## TIME: 'month', 'day', 'hour', 'estimated_processing_time_', 'remain_cycle_times_',  'queue_waiting_time_', 'acc_waiting_time_'+str(i),
@@ -115,11 +115,12 @@ class gym_env(Env):
         print('-------- Resetting environment --------')
         self.total_reward = 0
         self.reward_count = 0
+        self.nr_steps = 0
         self.env = simpy.Environment()
         self.queue_writer = f"output/output_{self.name_log}_C{self.CALENDAR}_{self.policy}/queue_progression_{self.name_log}_{self.policy}.csv"
         self.simulation_process = SimulationProcess(self.env, self.params, self.CALENDAR, self.queue_writer)
         self.completed_traces = []
-
+        self.last_reward = {}
         if self.print:
             calendar = 'CALENDAR' if self.CALENDAR else 'NOT_CALENDAR'
             utility.define_folder_output(f"output/output_{self.name_log}_C{self.CALENDAR}_T{self.threshold}_{self.policy}")            
@@ -171,7 +172,6 @@ class gym_env(Env):
         #### action ---> which token can perform the activity (token_id)
         self.nr_steps += 1
         reward = 0
-        pre_tokens_ended = set(self.last_reward.keys())
         if action is not None:
             if self.output[action] != 'Postpone':
                 res = self.simulation_process.get_state()['role']
@@ -192,13 +192,15 @@ class gym_env(Env):
                 reward = self.last_reward[token_id]
             else:
                 reward = self.tokens[token_id].last_reward
+                #print("######################", reward, self.tokens[token_id]._prefix.get_prefix() ,"######################")
 
         info = {}
         if len(self.tokens) == 0:
             isTerminated = True
             self.waiting_times = list(self.simulation_process.waiting_times.values())
-            info = {'mean': np.mean(self.waiting_times), 'percentile': np.percentile(self.waiting_times, 95)}
-            print('Percentile', np.percentile(self.waiting_times, 95))
+            info = {'list_wait': self.waiting_times, 'percentile': np.percentile(self.waiting_times, 95)}
+            print('Percentile', np.percentile(self.waiting_times, 95), len(self.waiting_times))
+            print('Step to finish the simulation', self.nr_steps)
         else:
             isTerminated = False
         return self.get_state(), reward, isTerminated, {}, info

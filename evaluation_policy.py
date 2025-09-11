@@ -141,7 +141,6 @@ def run_simulation(NAME_LOG, POLICY, N_SIMULATION, threshold=0, postpone=True, r
         cycle_times['percentile_wait_simulations'] = percentile_wait_simulations
         json.dump(cycle_times, f, indent=2)
 
-    print('Mean mean simulation', np.mean(mean))
     print('Mean percentile simulations', np.mean(percentile_wait_simulations))
     print('END simulation')
 
@@ -173,7 +172,7 @@ if len(sys.argv) > 1:
 else:
     model = None
     NAME_LOG = "ER_hospital" #'PurchasingExample'#'BPI_Challenge_2017_W_Two_TS', 'confidential_1000', 'ConsultaDataMining201618','PurchasingExample'
-    N_TRACES = 500
+    N_TRACES = 1
     CALENDAR = True
     THRESHOLD = 'Exp7200'
     POLICY = 'FIFO_activity'

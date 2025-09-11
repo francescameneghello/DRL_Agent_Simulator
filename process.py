@@ -76,12 +76,9 @@ class SimulationProcess(object):
         Method to retrieve the occupancy in percentage of all roles, as an intercase feature.
         """
         occup = []
-        if self._params.FEATURE_ROLE == 'all_role':
-            for key in self._params.ROLE_CAPACITY:
-                if key != 'SYSTEM' and key != 'TRIGGER_TIMER':
-                    occup.append(self.get_occupations_single_role(key))
-        else:
-            occup.append(self.get_occupations_single_role(role))
+        for key in self._params.ROLE_CAPACITY:
+            if key != 'SYSTEM' and key != 'TRIGGER_TIMER':
+                occup.append(self.get_occupations_single_role(key))
         return occup
 
     def get_occupations_single_role_LSTM(self, role):

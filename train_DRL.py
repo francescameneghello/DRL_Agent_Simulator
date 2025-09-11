@@ -65,7 +65,7 @@ if __name__ == '__main__':
     #if true, load model for a new round of training
     load_model = False
     postpone_penalty = 0
-    time_steps = 50
+    time_steps = 50000
     #time_steps = 10000
     n_steps = {"BPI_Challenge_2012_W_Two_TS": 1000,
             "confidential_1000": 5120,
@@ -73,7 +73,7 @@ if __name__ == '__main__':
             "PurchasingExample": 5120,
             "BPI_Challenge_2017_W_Two_TS": 48128,
             "Productions": 1280,
-            "ER_hospital": 1000} ## 5120
+            "ER_hospital": 4200} ## 5120
     n_steps = n_steps[NAME_LOG] # Number of steps for each network update
 
     # Create log dir
@@ -108,7 +108,7 @@ if __name__ == '__main__':
     # Train the agent
     eval_env = gym_env(NAME_LOG, N_TRACES, CALENDAR, threshold=threshold, postpone=postpone, path_step=path_step)  # Initialize env
     eval_env = Monitor(eval_env, log_dir)
-    nr_evaluations = 1 #if NAME_LOG != 'BPI_Challenge_2017_W_Two_TS' else 3
+    nr_evaluations = 5 #if NAME_LOG != 'BPI_Challenge_2017_W_Two_TS' else 3
     eval_callback = EvalPolicyCallback(check_freq=5*int(n_steps), nr_evaluations=nr_evaluations, log_dir=log_dir, eval_env=eval_env)
 
     callback = CallbackList([eval_callback])

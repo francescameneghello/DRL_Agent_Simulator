@@ -64,7 +64,9 @@ class EvalPolicyCallback(BaseCallback):
         self.eval_env = eval_env
         self.best_mean_waiting_times = float('-inf')
         self.save_path = os.path.join(log_dir, model_name)
-        self.best_mean_cycle_time = np.inf
+        self.best_percentile_waiting_times = -np.inf
+        self.prev_percentile_waiting_times = 0
+        self.actual_percentile_waiting_times = -np.inf
         self.prev_steps = 0
         self.episode_lengths = []
 
@@ -76,8 +78,7 @@ class EvalPolicyCallback(BaseCallback):
     def _on_step(self) -> bool:
         if (self.n_calls - 1) % self.check_freq == 0 and self.n_calls > 1: # After model update
             print('\n-------- Evaluating current policy --------')
-            mean_waiting_times = []
-            percentile_waiting_times = []
+            waiting_time_evals = []
             for epoch in range(self.nr_evaluations):
                 state, _ = self.eval_env.reset()
                 isTerminated = False
@@ -86,21 +87,18 @@ class EvalPolicyCallback(BaseCallback):
                     action, _state = self.model.predict(state, action_masks=action_masks)
                     state, reward, isTerminated, _, info = self.eval_env.step(action)
 
-                mean_waiting_times.append(info['mean'])
-                percentile_waiting_times.append(info['percentile'])
+                waiting_time_evals.append(info['percentile'])
 
-            mean_waiting_times = sum(mean_waiting_times)/len(mean_waiting_times)
-            mean_total_reward = sum(percentile_waiting_times)/len(percentile_waiting_times)
+            self.actual_percentile_waiting_times = np.mean(waiting_time_evals)
+            print("Waiting times percentile of current policy --->", self.actual_percentile_waiting_times)
+            if self.actual_percentile_waiting_times > self.best_percentile_waiting_times:
+                self.best_percentile_waiting_times = self.actual_percentile_waiting_times
+                print(f"Saving new best model to {self.save_path}")
+                self.model.save(self.save_path)
 
             print(f"Num timesteps: {self.num_timesteps}")
-            print(f"Best mean waiting times: {self.best_mean_waiting_times:.2f} - Last mean waiting_times: {mean_total_reward:.2f}")
-            print(f"Mean of percentile waiting times", mean_total_reward)
-            if mean_total_reward > self.best_mean_waiting_times:
-                self.best_mean_waiting_times = mean_total_reward
-                # Example for saving best model
-                if self.verbose >= 1:
-                    print(f"Saving new best model to {self.save_path}")
-                self.model.save(self.save_path)
+            print(f"Best percentile waiting times: {self.best_mean_waiting_times:.2f} - Actual percentile waiting_times: {self.actual_percentile_waiting_times:.2f} - Last percentile waiting_times: {self.prev_percentile_waiting_times:.2f}")
+            self.prev_percentile_waiting_times = self.actual_percentile_waiting_times
             print('---- Finished evaluating current policy ----\n')
         return True
 
