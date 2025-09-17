@@ -9,66 +9,29 @@ from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.results_plotter import load_results, ts2xy, plot_results
 from stable_baselines3.common.noise import NormalActionNoise
 from stable_baselines3.common.callbacks import BaseCallback
+import csv
 from typing import Callable
 
-class SaveOnBestTrainingRewardCallback(BaseCallback):
-    """
-    Callback for saving a model (the check is done every ``check_freq`` steps)
-    based on the training reward (in practice, we recommend using ``EvalCallback``).
-
-    :param check_freq:
-    :param log_dir: Path to the folder where the model will be saved.
-      It must contains the file created by the ``Monitor`` wrapper.
-    :param verbose: Verbosity level: 0 for no output, 1 for info messages, 2 for debug messages
-    """
-    def __init__(self, check_freq: int, log_dir: str, verbose: int = 1):
-        super().__init__(verbose)
-        self.check_freq = check_freq
-        self.log_dir = log_dir
-        self.save_path = os.path.join(log_dir, "best_model")
-        self.best_mean_waiting = -np.inf
-
-    def _init_callback(self) -> None:
-        # Create folder if needed
-        if self.save_path is not None:
-            os.makedirs(self.save_path, exist_ok=True)
-
-    def _on_step(self) -> bool:
-        if self.n_calls % self.check_freq == 0:
-
-          # Retrieve training reward
-          x, y = ts2xy(load_results(self.log_dir), "timesteps")
-          if len(x) > 0:
-              # Mean training reward over the last 100 episodes
-              mean_reward = np.mean(y[-5:])
-              if self.verbose >= 1:
-                print(f"Num timesteps: {self.num_timesteps}")
-                print(f"Best mean reward: {self.best_mean_waiting:.2f} - Last mean reward per episode: {mean_reward:.2f}")
-
-              # New best model, you could save the agent here
-              if mean_reward > self.best_mean_waiting:
-                  self.best_mean_reward = mean_reward
-                  # Example for saving best model
-                  if self.verbose >= 1:
-                    print(f"Saving new best model to {self.save_path}")
-                  self.model.save(self.save_path)
-
-        return True
 
 class EvalPolicyCallback(BaseCallback):
+
     def __init__(self, check_freq: int, nr_evaluations: int, log_dir: str, eval_env, model_name: str = 'best_model', verbose: int = 1):
         super(EvalPolicyCallback, self).__init__(verbose)
         self.check_freq = check_freq
         self.nr_evaluations = nr_evaluations
         self.log_dir = log_dir
         self.eval_env = eval_env
-        self.best_mean_waiting_times = float('-inf')
         self.save_path = os.path.join(log_dir, model_name)
-        self.best_percentile_waiting_times = -np.inf
-        self.prev_percentile_waiting_times = 0
-        self.actual_percentile_waiting_times = -np.inf
+        self.best_sum_waiting_times = -np.inf
+        self.prev_sum_waiting_times = 0
+        self.actual_sum_waiting_times = -np.inf
         self.prev_steps = 0
         self.episode_lengths = []
+        csv_path = os.path.join(log_dir, "evaluation_monitor.csv")
+        self.csv_file = open(csv_path, mode="w", newline="")
+        self.csv_monitoring_writer = csv.writer(self.csv_file)
+        self.csv_monitoring_writer.writerow(["r_mean"])
+        self.csv_file.flush()
 
     def _init_callback(self) -> None:
         # Create folder if needed
@@ -87,21 +50,76 @@ class EvalPolicyCallback(BaseCallback):
                     action, _state = self.model.predict(state, action_masks=action_masks)
                     state, reward, isTerminated, _, info = self.eval_env.step(action)
 
-                waiting_time_evals.append(info['percentile'])
+                waiting_time_evals.append(info['sum_waiting_times'])
 
-            self.actual_percentile_waiting_times = np.mean(waiting_time_evals)
-            print("Waiting times percentile of current policy --->", self.actual_percentile_waiting_times)
-            if self.actual_percentile_waiting_times > self.best_percentile_waiting_times:
-                self.best_percentile_waiting_times = self.actual_percentile_waiting_times
+            self.actual_sum_waiting_times = np.mean(waiting_time_evals)
+            self.csv_monitoring_writer.writerow([self.actual_sum_waiting_times])
+            self.csv_file.flush()
+            print("Waiting times percentile of current policy --->", self.actual_sum_waiting_times)
+            if self.actual_sum_waiting_times > self.best_sum_waiting_times:
+                self.best_sum_waiting_times = self.actual_sum_waiting_times
                 print(f"Saving new best model to {self.save_path}")
                 self.model.save(self.save_path)
 
             print(f"Num timesteps: {self.num_timesteps}")
-            print(f"Best percentile waiting times: {self.best_mean_waiting_times:.2f} - Actual percentile waiting_times: {self.actual_percentile_waiting_times:.2f} - Last percentile waiting_times: {self.prev_percentile_waiting_times:.2f}")
-            self.prev_percentile_waiting_times = self.actual_percentile_waiting_times
+            print(f"Best percentile waiting times: {self.best_sum_waiting_times:.2f} - Actual percentile waiting_times: {self.actual_sum_waiting_times:.2f} - Last percentile waiting_times: {self.prev_sum_waiting_times:.2f}")
+            self.prev_sum_waiting_times = self.actual_sum_waiting_times
             print('---- Finished evaluating current policy ----\n')
         return True
 
+'''
+class EvalPolicyCallback(BaseCallback):
+    def __init__(self, check_freq: int, nr_evaluations: int, log_dir: str, eval_env, model_name: str = 'best_model', verbose: int = 1):
+        super(EvalPolicyCallback, self).__init__(verbose)
+        self.check_freq = check_freq
+        self.nr_evaluations = nr_evaluations
+        self.log_dir = log_dir
+        self.eval_env = eval_env
+        self.save_path = os.path.join(log_dir, model_name)
+        self.best_sum_waiting_times = -np.inf
+        self.prev_sum_waiting_times = 0
+        self.actual_sum_waiting_times = -np.inf
+        self.prev_steps = 0
+        self.episode_lengths = []
+        csv_path = os.path.join(log_dir, "evaluation_monitor.csv")
+        self.csv_file = open(csv_path, mode="w", newline="")
+        self.csv_monitoring_writer = csv.writer(self.csv_file)
+        self.csv_monitoring_writer.writerow(["r_mean"])
+        self.csv_file.flush()
+
+    def _init_callback(self) -> None:
+        # Create folder if needed
+        if self.save_path is not None:
+            os.makedirs(self.save_path, exist_ok=True)
+
+    def _on_step(self) -> bool:
+        if (self.n_calls - 1) % self.check_freq == 0 and self.n_calls > 1: # After model update
+            print('\n-------- Evaluating current policy --------')
+            waiting_time_evals = []
+            for epoch in range(self.nr_evaluations):
+                state, _ = self.eval_env.reset()
+                isTerminated = False
+                while isTerminated == False:
+                    action, _state = self.model.predict(state)
+                    state, reward, isTerminated, _, info = self.eval_env.step(action)
+
+                waiting_time_evals.append(info['sum_waiting_times'])
+
+            self.actual_sum_waiting_times = np.mean(waiting_time_evals)
+            self.csv_monitoring_writer.writerow([self.actual_sum_waiting_times])
+            self.csv_file.flush()
+            print("Waiting times percentile of current policy --->", self.actual_sum_waiting_times)
+            if self.actual_sum_waiting_times > self.best_sum_waiting_times:
+                self.best_sum_waiting_times = self.actual_sum_waiting_times
+                print(f"Saving new best model to {self.save_path}")
+                self.model.save(self.save_path)
+
+            print(f"Num timesteps: {self.num_timesteps}")
+            print(f"Best percentile waiting times: {self.best_sum_waiting_times:.2f} - Actual percentile waiting_times: {self.actual_sum_waiting_times:.2f} - Last percentile waiting_times: {self.prev_sum_waiting_times:.2f}")
+            self.prev_sum_waiting_times = self.actual_sum_waiting_times
+            print('---- Finished evaluating current policy ----\n')
+        return True
+'''
 
 def custom_schedule(initial_value: float) -> Callable[[float], float]:
     """

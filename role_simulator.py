@@ -92,7 +92,7 @@ class RoleSimulator(object):
     def _get_calendar(self):
         return self._calendar
 
-    def release(self, request, single_resource):
+    def release(self, request, single_resource=None):
         """
         Method to release the role resource that was used to perform the activity.
         """

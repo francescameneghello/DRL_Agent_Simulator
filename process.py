@@ -32,13 +32,13 @@ class SimulationProcess(object):
         self.WINDOW_PREFIX = 5 ### da sistemare
         del self.role_queues['TRIGGER_TIMER']
         self.len_queues = []
-        self.queue_writer = csv.writer(open(queue_writer, 'w'))
-        self.queue_writer.writerow(["time", "datetime", "role", "queue", "token", "activity"])
+        #self.queue_writer = csv.writer(open(queue_writer, 'w'))
+        #self.queue_writer.writerow(["time", "datetime", "role", "queue", "token", "activity"])
 
     def add_token_queue(self, resources, token_id, activity):
         res = self._get_resource(resources)
         self.role_queues[res._name].append(token_id)
-        self.queue_writer.writerow([self._env.now, self._date_start + timedelta(seconds=self._env.now), res._name, len(self.role_queues[res._name]), token_id, activity])
+        #self.queue_writer.writerow([self._env.now, self._date_start + timedelta(seconds=self._env.now), res._name, len(self.role_queues[res._name]), token_id, activity])
 
     def del_token_queue(self, res, pos):
         token_id = self.role_queues[res][pos]
@@ -141,20 +141,15 @@ class SimulationProcess(object):
             for idx, token_id in enumerate(tokens_in_queue):
                 prefix = self.tokens_pending[token_id][0]._prefix.get_prefix()
                 activity = self.tokens_pending[token_id][0]._trans.label
+                state['token_id_'+str(idx)] = token_id
                 state['actual_activity_'+str(idx)] = activity
                 state['len_prefix_' + str(idx)] = len(prefix)
                 ### acc_waiting_time in the queue and in total
                 state['acc_waiting_time_'+str(idx)] = self.tokens_pending[token_id][0].acc_waiting_times
                 state['queue_waiting_time_' + str(idx)] = self._env.now - self.tokens_pending[token_id][0].time_entered_in_queue
-                ### TO ADD: remaining_cycle_time, fix remain_acts
-                remain_acts = 2 #self._params.remain_activities[self.tokens_pending[token_id][0]._trans.name]
-                state['remain_acts_' + str(idx)] = remain_acts
-                state['estimated_processing_time_' + str(idx)] = self._params.median_processing_time[self.tokens_pending[token_id][0]._trans.label]
+                state['estimated_processing_time_' + str(idx)] = self._params.mean_processing_time[self.tokens_pending[token_id][0]._trans.label]
                 state['wip_act_queue'][activity] += 1
                 hol.append(self.tokens_pending[token_id][0].time_entered_in_queue)
-                ### remain_cycle_times
-                max_processing = max(self._params.median_processing_time.values())
-                state['remain_cycle_times_' + str(idx)] = remain_acts * max_processing
                 for idx, act in enumerate(prefix[-self.WINDOW_PREFIX:]):
                     state['prefix_' + str(idx)] = act
             state['HOL'] = self._env.now - min(hol)

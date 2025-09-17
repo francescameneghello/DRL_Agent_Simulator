@@ -211,3 +211,8 @@ output/
 tmp_training_2/
 
 /tmp_training
+/tmp_training
+.DS_Store
+monitor.csv
+.DS_Store
+tmp_training/.DS_Store

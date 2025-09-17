@@ -44,10 +44,8 @@ class Parameters(object):
                 self._define_roles_resources(data['roles'])
                 self.LEN_prefix = data['LEN_prefix']
                 self.WAITING_TIMES_LOG = data["WAITING_TIMES_LOG"]
-                self.WAITING_TIMES_SINGLE = data["SINGLE_WAITING_TIMES_LOG"]
-                self.remain_activities = data["Remain_activities"]
-                self.median_processing_time = data["Median_processing_time"]
-                self.cycle_times = data["CYCLE_TIMES"]
+                self.mean_processing_time = data["Mean_processing_time"]
+                self.upper_processing_time = data["Upper_processing_time"]
         else:
             raise ValueError('Parameter file does not exist')
 

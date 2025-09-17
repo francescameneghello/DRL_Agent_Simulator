@@ -81,6 +81,7 @@ class Token(object):
         """
             The main function to handle the simulation of a single trace
         """
+        self.last_reward = -(self.env.now - self._time_last_activity)
         self._process.del_tokens_pending(self._id)
         if self._prefix.is_empty(): ## no activities already executed
             self._resource_trace_request = self._resource_trace.request()
@@ -129,19 +130,20 @@ class Token(object):
         self._buffer.set_feature("wip_activity", resource_task.count)
 
         self._buffer.set_feature("start_time", self._start_time + timedelta(seconds=self.env.now))
-        self.last_reward = -(self.env.now - self._time_last_activity)
         self.acc_waiting_times += self.last_reward
+        self._buffer.set_feature("wip_activity", self.acc_waiting_times)
         duration = self.define_processing_time(self._trans.label)
         yield self.env.timeout(duration)
         self._buffer.set_feature("wip_end", self._resource_trace.count)
         self._buffer.set_feature("end_time", self._start_time + timedelta(seconds=self.env.now))
-        self._buffer.set_feature("queue", self.last_reward/60)
+        self._buffer.set_feature("queue", self.last_reward)
         self._prefix.add_activity(self._trans.label)
         if self._print:
             self._buffer.print_values()
         self._process._release_single_resource(self._id, resource._get_name(), self._trans.label)
         resource_task.release(resource_task_request)
         resource.release(request_resource, single_resource)
+        #resource.release(request_resource)
 
         self._process.update_kpi_trace(self._id, self.env.now)
         self._update_marking(self._trans)

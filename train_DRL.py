@@ -1,15 +1,12 @@
 import os
-import numpy as np
 from gym_env import gym_env
 import datetime
+from stable_baselines3 import PPO
 import sys
 from stable_baselines3.common.monitor import Monitor
-from sb3_contrib.common.maskable.policies import MaskableActorCriticPolicy, MaskableMultiInputActorCriticPolicy
+from callbacks import EvalPolicyCallback
+from callbacks import linear_schedule
 from sb3_contrib import MaskablePPO
-from stable_baselines3.common.logger import configure
-from callbacks import SaveOnBestTrainingRewardCallback, EvalPolicyCallback
-from callbacks import custom_schedule, linear_schedule
-import csv
 from stable_baselines3.common.callbacks import CallbackList, BaseCallback
 
 
@@ -65,8 +62,8 @@ if __name__ == '__main__':
     #if true, load model for a new round of training
     load_model = False
     postpone_penalty = 0
-    time_steps = 50000
-    #time_steps = 10000
+    time_steps = 1000
+    #time_steps = 20000
     n_steps = {"BPI_Challenge_2012_W_Two_TS": 1000,
             "confidential_1000": 5120,
             "ConsultaDataMining201618": 5120,
@@ -78,38 +75,28 @@ if __name__ == '__main__':
 
     # Create log dir
     now = datetime.datetime.now()
-    log_dir = f"tmp_training/single_reward/defaultMLP_{NAME_LOG}_{N_TRACES}_C{CALENDAR}_T{threshold}_P{postpone}_ER_hospital/"
+    log_dir = f"tmp_training/single_reward/defaultMLP_exp1800_{NAME_LOG}_{N_TRACES}_C{CALENDAR}_SUM_WAITING_TIMES_NO_MASKING_hospital/"
     os.makedirs(log_dir, exist_ok=True)
-
-    ### save n_steps for simulation
-    path_step = log_dir + "n_steps.csv"
-    with open(path_step, mode="w", newline="") as file:
-        writer = csv.writer(file)
-        writer.writerow(["n_steps"])
 
     #print(f'Training agent for {config_type} with {time_steps} timesteps in updates of {n_steps} steps.')
     # Create and wrap the environment
     # Reward functions: 'AUC', 'case_task'
-    env_simulator = gym_env(NAME_LOG, N_TRACES, CALENDAR, threshold=threshold, postpone=postpone, path_step=path_step)  # Initialize env
+    env_simulator = gym_env(NAME_LOG, N_TRACES, CALENDAR, threshold=threshold, postpone=postpone, path_step=None)  # Initialize env
     env = Monitor(env_simulator, log_dir)
 
     # Create the model
-    gamma = 0.999
+    gamma = 0.9
     policy_kwargs = dict(
     net_arch=[dict(pi=[512, 256, 64], vf=[512, 256, 64])] 
     )
     model = MaskablePPO("MlpPolicy", env_simulator, clip_range=0.2, learning_rate=linear_schedule(3e-4), n_steps=int(n_steps), batch_size=256, gamma=gamma, verbose=1)
-
-    #Logging to tensorboard. To access tensorboard, open a bash terminal in the projects directory, activate the environment (where tensorflow should be installed) and run the command in the following line
-    # tensorboard --logdir ./tmp/
-    # then, in a browser page, access localhost:6006 to see the board
-    model.set_logger(configure(log_dir, ["stdout", "csv", "tensorboard"]))
+    #model = PPO("MlpPolicy", env, clip_range=0.2, learning_rate=linear_schedule(3e-4), n_steps=int(n_steps), batch_size=256, gamma=gamma, verbose=1)
 
     # Train the agent
-    eval_env = gym_env(NAME_LOG, N_TRACES, CALENDAR, threshold=threshold, postpone=postpone, path_step=path_step)  # Initialize env
+    eval_env = gym_env(NAME_LOG, N_TRACES, CALENDAR, threshold=threshold, postpone=postpone, path_step=None)  # Initialize env
     eval_env = Monitor(eval_env, log_dir)
-    nr_evaluations = 5 #if NAME_LOG != 'BPI_Challenge_2017_W_Two_TS' else 3
-    eval_callback = EvalPolicyCallback(check_freq=5*int(n_steps), nr_evaluations=nr_evaluations, log_dir=log_dir, eval_env=eval_env)
+    nr_evaluations = 10
+    eval_callback = EvalPolicyCallback(check_freq=10*int(n_steps), nr_evaluations=nr_evaluations, log_dir=log_dir, eval_env=eval_env)
 
     callback = CallbackList([eval_callback])
 

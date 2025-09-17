@@ -1,15 +1,14 @@
 
-from gym_env import gym_env
+from gym_env_trials.gym_env_no_masking import gym_env
 from sb3_contrib import MaskablePPO
+from  stable_baselines3 import PPO
 import random
-import glob
 import pandas as pd
 import pm4py
 from pm4py.objects.log.util import sorting
 import numpy as np
 import scipy.stats as st
 import json
-from collections import defaultdict
 import sys, os
 
 
@@ -110,7 +109,8 @@ def run_simulation(NAME_LOG, POLICY, N_SIMULATION, threshold=0, postpone=True, r
     else:
         file = f'./output/result_{NAME_LOG}_{N_TRACES}_C{CALENDAR}_T{THRESHOLD}_P{postpone}_{reward_function}_{POLICY}.json'
     cycle_times = {}
-    percentile_wait_simulations = []
+    sum_wait_simulations = []
+    rewards = 0
     mean = []
     for i in range(0, N_SIMULATION):
         obs = env_simulator.reset(i=i)
@@ -131,17 +131,16 @@ def run_simulation(NAME_LOG, POLICY, N_SIMULATION, threshold=0, postpone=True, r
                 action = RANDOM(env_simulator.simulation_process.get_state(), env_simulator.simulation_process.tokens_pending)
                 state, reward, isTerminated, dones, info = env_simulator.step_baseline(action)
             else:
-                mask = env_simulator.action_masks()
-                action, _states = model.predict(state, action_masks=mask)
+                #mask = env_simulator.action_masks()
+                #action, _states = model.predict(state, action_masks=mask)
+                action, _states = model.predict(state)
                 state, reward, isTerminated, dones, info = env_simulator.step(action)
-        cycle_times[f'simulation_{i}'] = {'percentile': info['percentile'], 'mean': info['mean']}
-        percentile_wait_simulations.append(info['percentile'])
-        mean.append(info['mean'])
+        cycle_times[f'simulation_{i}'] = {'makespan': info['makespan'], 'sum_waiting_times': info['sum_waiting_times'], 'percentile': info['percentile'], 'mean': info['mean'], 'total_reward': reward}
+        sum_wait_simulations.append(info['sum_waiting_times'])
     with open(file, 'w') as f:
-        cycle_times['percentile_wait_simulations'] = percentile_wait_simulations
+        cycle_times['sum_wait_simulations'] = sum_wait_simulations
         json.dump(cycle_times, f, indent=2)
 
-    print('Mean percentile simulations', np.mean(percentile_wait_simulations))
     print('END simulation')
 
 
@@ -152,7 +151,7 @@ traces = {"BPI_Challenge_2012_W_Two_TS":1200,
         "PurchasingExample":101,
         "BPI_Challenge_2017_W_Two_TS":5789,
         "Productions":45,
-        "ER_hospital": 1000}
+        "ER_hospital": 500}
 
 if len(sys.argv) > 1:
     NAME_LOG = sys.argv[1]#'BPI_Challenge_2017_W_Two_TS'
@@ -172,9 +171,9 @@ if len(sys.argv) > 1:
 else:
     model = None
     NAME_LOG = "ER_hospital" #'PurchasingExample'#'BPI_Challenge_2017_W_Two_TS', 'confidential_1000', 'ConsultaDataMining201618','PurchasingExample'
-    N_TRACES = 1
+    N_TRACES = 20
     CALENDAR = True
-    THRESHOLD = 'Exp7200'
+    THRESHOLD = 'Exp1800'
     POLICY = 'FIFO_activity'
     N_SIMULATION = 1
 
@@ -185,5 +184,6 @@ if POLICY == 'SPT':
 elif POLICY == 'FIFO_activity' or POLICY == 'FIFO_case' or POLICY == 'RANDOM':
     run_simulation(NAME_LOG, POLICY, N_SIMULATION, THRESHOLD)
 else:
-    model = MaskablePPO.load('/home/francesca/Documents/Resource_simulator_DRL/tmp_training_2/BPI_Challenge_2012_W_Two_TS_from_input_data_CTrue_T20_PFalse_bpi12_all_2/best_model.zip')
-    run_simulation(NAME_LOG, POLICY, N_SIMULATION, threshold=THRESHOLD, postpone=False, reward_function='inverse_CT', model=model)
+    #model = MaskablePPO.load('/home/francesca/Documents/Resource_simulator_distribution/tmp_training/single_reward/defaultMLP_exp1800_ER_hospital_500_CTrue_SUM_WAITING_TIMES_QUEUE_FEATURE_ER_hospital/best_model.zip')
+    model = PPO.load('/home/francesca/Documents/Resource_simulator_distribution/tmp_training/single_reward/defaultMLP_exp1800_ER_hospital_500_CTrue_SUM_WAITING_TIMES_QUEUE_FEATURE_NO_MASKING_ER_hospital/model_final.zip')
+    run_simulation(NAME_LOG, POLICY, N_SIMULATION, threshold=THRESHOLD, postpone=False, reward_function='best', model=model)

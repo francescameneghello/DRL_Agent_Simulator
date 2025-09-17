@@ -36,8 +36,6 @@ class gym_env(Env):
         self.threshold = threshold
         self.postpone = postpone
         self.features = features
-        self.total_reward = 0
-        self.reward_count = 0
         self.path_step = path_step
 
         self.normalization_acc_waiting_times = 5000
@@ -67,7 +65,7 @@ class gym_env(Env):
         # For each token in the window: activity, len_prefix, acc_cycle_time
         #
         #
-        self.WINDOW_SIZE = 5
+        self.WINDOW_SIZE = 200
         self.WINDOW_PREFIX = 0
 
         ## TIME: 'month', 'day', 'hour', 'estimated_processing_time_', 'remain_cycle_times_',  'queue_waiting_time_', 'acc_waiting_time_'+str(i),
@@ -76,8 +74,6 @@ class gym_env(Env):
             # 'HOL', 'ratio_traces', 'wip_act_queue_',  'queue_waiting_time_', 'acc_waiting_time_'+str(i),
         self.input = ['month', 'day', 'hour']
         self.input += ['actual_role', 'role_queue', 'role_occup', 'role_capacity']
-        for i in range(0, self.WINDOW_SIZE):
-            self.input += ['token_id_'+str(i), 'actual_activity_'+str(i),'len_prefix_' + str(i), 'estimated_processing_time_'+str(i)]
 
         print('INPUT', self.input, len(self.input))
         print("###############################################################")
@@ -99,14 +95,15 @@ class gym_env(Env):
                                             shape=(len(self.input),),
                                             dtype=np.float64)
 
-        self.action_space = spaces.Discrete(len(self.output))
-        print('ACTION SPACE', self.action_space, len(self.output))
+        self.action_space = spaces.Box(low=0, high=1.0, shape=(1,), dtype=np.float32)
+        print('ACTION SPACE', self.action_space)
         print("###############################################################")
 
         self.processes = []
+        self.last_reward = {}
         self.nr_steps = 0
         self.nr_postpone = 0
-
+        
         print(f'{self.name_log}, {self.N_TRACES}, calendar={self.CALENDAR}, postpone={self.postpone}', flush=True)
         warnings.filterwarnings("ignore")
 
@@ -157,13 +154,6 @@ class gym_env(Env):
         state = self.simulation_process.get_state()
         return self.get_state(), {}
 
-    def action_masks(self): ### missing the definition of Postpone
-        mask = [False for _ in range(len(self.output))]
-        state = self.simulation_process.get_state()
-        for i in range(min(state['role_queue'], self.WINDOW_SIZE)):
-            mask[i] = True
-        return list(map(bool, mask))
-
     #!! The algorithm uses this function to interact with the environment
     # Every step is an observation (state, action, reward) which is used for training
     # The agent takes an action based on the current state, and the environment should transition to the next state
@@ -173,30 +163,32 @@ class gym_env(Env):
         self.nr_steps += 1
         reward = 0
         if action is not None:
-            if self.output[action] != 'Postpone':
-                res = self.simulation_process.get_state()['role']
-                token_id = self.simulation_process.del_token_queue(res, action)
-                reward = -(self.env.now - self.tokens[token_id]._time_last_activity)
-                simulation = self.tokens[token_id].simulation()
-                self.env.process(simulation)
-                start = self.simulation_process._date_start
-                for res in self.simulation_process._resources:
-                    if res != 'TRIGGER_TIMER':
-                        role = self.simulation_process._get_resource(res)
-                        if not role.waiting_for_calendar:
-                            self.env.process(role.wait_calendar(start))
-                self.next_decision_moment()
-            else:
-                self.next_decision_moment()
+            action = round(action[0]*(self.simulation_process.get_state()['role_queue']-1))
+            res = self.simulation_process.get_state()['role']
+            token_id = self.simulation_process.del_token_queue(res, action)
+            reward =  -(self.env.now - self.tokens[token_id]._time_last_activity)
+            simulation = self.tokens[token_id].simulation()
+            self.env.process(simulation)
+            start = self.simulation_process._date_start
+            for res in self.simulation_process._resources:
+                if res != 'TRIGGER_TIMER':
+                    role = self.simulation_process._get_resource(res)
+                    if not role.waiting_for_calendar:
+                        self.env.process(role.wait_calendar(start))
+            self.next_decision_moment()
+        else:
+            self.next_decision_moment()
 
         info = {}
         self.acc_rewards += reward
         if len(self.tokens) == 0:
             isTerminated = True
             self.waiting_times = list(self.simulation_process.waiting_times.values())
-            print('Makespan', self.params.START_SIMULATION + timedelta(seconds=self.env.now), 'Sum of waiting times', sum(self.waiting_times))
-            info = {'makespan': self.env.now, 'sum_waiting_times': sum(self.waiting_times), 'percentile': np.percentile(self.waiting_times, 95), 'mean': np.mean(self.waiting_times)}
-            print('INFO', info)
+            print('Makespan', self.params.START_SIMULATION + timedelta(seconds=self.env.now), 'Sum of waiting times',
+                  sum(self.waiting_times))
+            info = {'makespan': self.env.now, 'sum_waiting_times': sum(self.waiting_times),
+                    'percentile': np.percentile(self.waiting_times, 95), 'mean': np.mean(self.waiting_times)}
+            print('INFO', info, self.nr_steps)
             print('total rewards final', self.acc_rewards)
         else:
             isTerminated = False
@@ -206,10 +198,11 @@ class gym_env(Env):
         ### action is (token_id, priority)
         ### self.tokens ----> { case_id: object_token }
         ### simulation = self.tokens[action[0]].simulation({'priority': priority}) the method has to simulate the execution by requesting the resource with the defined priority
+        reward = 0
         if action is not None:
             res = self.simulation_process.get_state()['role']
             token_id = self.simulation_process.del_token_queue(res, action)
-            reward = -(self.env.now - self.tokens[token_id]._time_last_activity)
+            reward =  -(self.env.now - self.tokens[token_id]._time_last_activity)
             simulation = self.tokens[token_id].simulation()
             self.env.process(simulation)
             self.next_decision_moment()
@@ -223,9 +216,11 @@ class gym_env(Env):
         if len(self.tokens) == 0:
             isTerminated = True
             self.waiting_times = list(self.simulation_process.waiting_times.values())
-            print('Makespan', self.params.START_SIMULATION + timedelta(seconds=self.env.now), 'Sum of waiting times', sum(self.waiting_times))
-            info = {'makespan': self.env.now, 'sum_waiting_times': sum(self.waiting_times), 'percentile': np.percentile(self.waiting_times, 95), 'mean': np.mean(self.waiting_times)}
-            print('INFO', info)
+            print('Makespan', self.params.START_SIMULATION + timedelta(seconds=self.env.now), 'Sum of waiting times',
+                  sum(self.waiting_times))
+            info = {'makespan': self.env.now, 'sum_waiting_times': sum(self.waiting_times),
+                    'percentile': np.percentile(self.waiting_times, 95), 'mean': np.mean(self.waiting_times), 'total_rewards': self.acc_rewards}
+            print('total rewards final', self.acc_rewards)
         else:
             isTerminated = False
         return self.get_state(), reward, isTerminated, {}, info
@@ -304,8 +299,8 @@ class gym_env(Env):
         ### ROLE-QUEUE ####  Queue info: role, #tokens_queue, role_occup, role_capacity
         if 'role' in env_state:
             role = (self.resources.index(env_state['role'])/len(self.resources))+1
+            #queue = 1 / (1 + math.exp(-env_state['role_queue']))
             queue = min(1, env_state['role_queue']/200)
-            tokens_in_queue = self.simulation_process.role_queues[env_state['role']]
             role_occup = env_state['occupation_roles'][env_state['role']]
             role_capacity = 1 / (1 + math.exp(-env_state['capacity_roles'][env_state['role']]))  ### normalize
         else:
@@ -317,30 +312,7 @@ class gym_env(Env):
             hol = 0
             wip_act_queue = []
 
-        tokens_features = []
-        tokens_in_queue = tokens_in_queue[:self.WINDOW_SIZE]  ### keep the first k tokens in the window
-        for i in range(len(tokens_in_queue)):
-            token_id = (env_state['token_id_'+str(i)]+1)/self.params.TRACES
-            tokens_features.append(token_id)
-            activity = self.task_types.index(env_state['actual_activity_' + str(i)])
-            tokens_features.append(activity / (len(self.task_types) + 1))  ## normalize activity
-
-            tokens_features.append(
-                min(1, (env_state['len_prefix_' + str(i)] + 1) / self.params.LEN_prefix))  ### len prefix
-
-            #normalize_acc = (env_state['acc_waiting_time_' + str(i)] - self.params.WAITING_TIMES_LOG['Mean']) / \
-            #                self.params.WAITING_TIMES_LOG['Std']
-            #tokens_features.append(normalize_acc)  ## acc_waiting time
-
-            normalize_processing = env_state['estimated_processing_time_' + str(i)]/ max(self.params.upper_processing_time.values())  ### estimated processing time
-            tokens_features.append(normalize_processing)
-
-        final_size = (self.WINDOW_SIZE*4)
-        if len(tokens_features) < final_size:
-            tokens_features += [-1] * (final_size - len(tokens_features))
-
         array = time
         array += [role, queue, role_occup, role_capacity]
-        array += tokens_features
         return np.array(array)
 

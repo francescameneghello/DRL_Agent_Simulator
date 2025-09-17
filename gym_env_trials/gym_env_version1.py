@@ -67,7 +67,7 @@ class gym_env(Env):
         # For each token in the window: activity, len_prefix, acc_cycle_time
         #
         #
-        self.WINDOW_SIZE = 5
+        self.WINDOW_SIZE = 200
         self.WINDOW_PREFIX = 0
 
         ## TIME: 'month', 'day', 'hour', 'estimated_processing_time_', 'remain_cycle_times_',  'queue_waiting_time_', 'acc_waiting_time_'+str(i),
@@ -76,8 +76,6 @@ class gym_env(Env):
             # 'HOL', 'ratio_traces', 'wip_act_queue_',  'queue_waiting_time_', 'acc_waiting_time_'+str(i),
         self.input = ['month', 'day', 'hour']
         self.input += ['actual_role', 'role_queue', 'role_occup', 'role_capacity']
-        for i in range(0, self.WINDOW_SIZE):
-            self.input += ['token_id_'+str(i), 'actual_activity_'+str(i),'len_prefix_' + str(i), 'estimated_processing_time_'+str(i)]
 
         print('INPUT', self.input, len(self.input))
         print("###############################################################")
@@ -104,6 +102,7 @@ class gym_env(Env):
         print("###############################################################")
 
         self.processes = []
+        self.last_reward = {}
         self.nr_steps = 0
         self.nr_postpone = 0
 
@@ -176,7 +175,7 @@ class gym_env(Env):
             if self.output[action] != 'Postpone':
                 res = self.simulation_process.get_state()['role']
                 token_id = self.simulation_process.del_token_queue(res, action)
-                reward = -(self.env.now - self.tokens[token_id]._time_last_activity)
+                reward =  -(self.env.now - self.tokens[token_id]._time_last_activity)
                 simulation = self.tokens[token_id].simulation()
                 self.env.process(simulation)
                 start = self.simulation_process._date_start
@@ -209,7 +208,7 @@ class gym_env(Env):
         if action is not None:
             res = self.simulation_process.get_state()['role']
             token_id = self.simulation_process.del_token_queue(res, action)
-            reward = -(self.env.now - self.tokens[token_id]._time_last_activity)
+            reward =  -(self.env.now - self.tokens[token_id]._time_last_activity)
             simulation = self.tokens[token_id].simulation()
             self.env.process(simulation)
             self.next_decision_moment()
@@ -304,8 +303,8 @@ class gym_env(Env):
         ### ROLE-QUEUE ####  Queue info: role, #tokens_queue, role_occup, role_capacity
         if 'role' in env_state:
             role = (self.resources.index(env_state['role'])/len(self.resources))+1
+            #queue = 1 / (1 + math.exp(-env_state['role_queue']))
             queue = min(1, env_state['role_queue']/200)
-            tokens_in_queue = self.simulation_process.role_queues[env_state['role']]
             role_occup = env_state['occupation_roles'][env_state['role']]
             role_capacity = 1 / (1 + math.exp(-env_state['capacity_roles'][env_state['role']]))  ### normalize
         else:
@@ -317,30 +316,7 @@ class gym_env(Env):
             hol = 0
             wip_act_queue = []
 
-        tokens_features = []
-        tokens_in_queue = tokens_in_queue[:self.WINDOW_SIZE]  ### keep the first k tokens in the window
-        for i in range(len(tokens_in_queue)):
-            token_id = (env_state['token_id_'+str(i)]+1)/self.params.TRACES
-            tokens_features.append(token_id)
-            activity = self.task_types.index(env_state['actual_activity_' + str(i)])
-            tokens_features.append(activity / (len(self.task_types) + 1))  ## normalize activity
-
-            tokens_features.append(
-                min(1, (env_state['len_prefix_' + str(i)] + 1) / self.params.LEN_prefix))  ### len prefix
-
-            #normalize_acc = (env_state['acc_waiting_time_' + str(i)] - self.params.WAITING_TIMES_LOG['Mean']) / \
-            #                self.params.WAITING_TIMES_LOG['Std']
-            #tokens_features.append(normalize_acc)  ## acc_waiting time
-
-            normalize_processing = env_state['estimated_processing_time_' + str(i)]/ max(self.params.upper_processing_time.values())  ### estimated processing time
-            tokens_features.append(normalize_processing)
-
-        final_size = (self.WINDOW_SIZE*4)
-        if len(tokens_features) < final_size:
-            tokens_features += [-1] * (final_size - len(tokens_features))
-
         array = time
         array += [role, queue, role_occup, role_capacity]
-        array += tokens_features
         return np.array(array)
 
